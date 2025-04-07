@@ -11,6 +11,14 @@ class UserProfile(BaseModel):
     profile_picture: Optional[str] = None
     total_earnings: int
 
+class OwnerProfile(BaseModel):
+    id: int
+    name: str
+    email: EmailStr
+    phone: Optional[str] = None
+    profile_picture: Optional[str] = None
+
+
 class UserUpdate(BaseModel):
     id: int
     name: Optional[str] = None

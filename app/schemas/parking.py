@@ -15,4 +15,5 @@ class ParkingSpot(BaseModel):
     close_time: str
     description: Optional[str] = None
     available_days: list[str]
-    image: str
+    image: Optional[str] = None
+

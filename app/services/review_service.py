@@ -1,7 +1,8 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session ,joinedload
 from typing import List, Optional
 from app.schemas.review import ReviewCreate, ReviewUpdate, ReviewInDB
-from app.db.review_model import Review
+from app.db.review_model import Review 
+from app.db.oauth_model import OAuthUser
 
 def get_review(db: Session, review_id: int) -> Optional[ReviewInDB]:
     """
@@ -27,8 +28,21 @@ def get_reviews_by_spot(db: Session, spot_id: int) -> List[ReviewInDB]:
     Returns:
         List[ReviewInDB]: A list of reviews for the specified spot.
     """
-    return db.query(Review).filter(Review.spot_id == spot_id).all()
-
+    reviews = db.query(Review).filter(Review.spot_id == spot_id).options(joinedload(Review.user)).all()
+    return[
+         ReviewInDB(
+            id=r.id,
+            created_at=r.created_at,
+            user_id=r.user_id,
+            reviewer_name=r.user.name if r.user else "Unknown",  # Get user's name
+            spot_id=r.spot_id,
+            rating_score=r.rating_score,
+            review_description=r.review_description,
+            image=r.image,
+            owner_reply=r.owner_reply
+        )
+        for r in reviews
+    ]
 def create_review(db: Session, review: ReviewCreate) -> ReviewInDB:
     """
     Create a new review.

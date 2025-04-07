@@ -12,5 +12,5 @@ class Booking(Base):
     start_date_time = Column(String, nullable=False)
     end_date_time = Column(String, nullable=False)
     payment_id = Column(Integer, ForeignKey("payments.id"), nullable=False)
-    status = Column(String,nullable=False, insert_default="Pending")
+    status = Column(String, nullable=False, insert_default="Pending")
     created_at = Column(DateTime, server_default=func.now())

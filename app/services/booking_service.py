@@ -1,10 +1,9 @@
 import razorpay
-import numpy as np
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.db.booking_model import Booking
 from app.db.payment_model import Payment
-from app.db.spot_model import Spot  # Import Spot model
+from app.db.spot_model import Spot
 from fastapi import HTTPException
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
@@ -212,6 +211,7 @@ async def get_bookings(db: Session):
             db.query(
                 Booking,
                 Spot.spot_title,
+                Spot.address.label("spot_address"),
                 Payment.amount,
                 Payment.status.label("payment_status")
             )
@@ -226,12 +226,14 @@ async def get_bookings(db: Session):
                 "user_id": booking.Booking.user_id,
                 "spot_id": booking.Booking.spot_id,
                 "spot_title": booking.spot_title,
+                "spot_address":booking.spot_address,
                 "total_slots": booking.Booking.total_slots,
                 "start_date_time": booking.Booking.start_date_time,
                 "end_date_time": booking.Booking.end_date_time,
                 "payment_id": booking.Booking.payment_id,
                 "payment_amount": booking.amount,
                 "payment_status": booking.payment_status,
+                "status":booking.Booking.status
             }
             for booking in bookings
         ]
@@ -260,6 +262,7 @@ async def get_booking_by_user(db: Session, user_id: int):
             db.query(
                 Booking,
                 Spot.spot_title,
+                Spot.address.label("spot_address"),
                 Payment.amount,
                 Payment.status.label("payment_status")
             )
@@ -275,12 +278,14 @@ async def get_booking_by_user(db: Session, user_id: int):
                 "user_id": booking.Booking.user_id,
                 "spot_id": booking.Booking.spot_id,
                 "spot_title": booking.spot_title,
+                "spot_address":booking.spot_address,
                 "total_slots": booking.Booking.total_slots,
                 "start_date_time": booking.Booking.start_date_time,
                 "end_date_time": booking.Booking.end_date_time,
                 "payment_id": booking.Booking.payment_id,
                 "payment_amount": booking.amount,
                 "payment_status": booking.payment_status,
+                "status":booking.Booking.status
             }
             for booking in bookings
         ]
@@ -309,6 +314,7 @@ async def get_booking_by_spot(db: Session, spot_id: int):
             db.query(
                 Booking,
                 Spot.spot_title,
+                Spot.address.label("spot_address"),
                 Payment.amount,
                 Payment.status.label("payment_status")
             )
@@ -324,12 +330,14 @@ async def get_booking_by_spot(db: Session, spot_id: int):
                 "user_id": booking.Booking.user_id,
                 "spot_id": booking.Booking.spot_id,
                 "spot_title": booking.spot_title,
+                "spot_address":booking.spot_address,
                 "total_slots": booking.Booking.total_slots,
                 "start_date_time": booking.Booking.start_date_time,
                 "end_date_time": booking.Booking.end_date_time,
                 "payment_id": booking.Booking.payment_id,
                 "payment_amount": booking.amount,
                 "payment_status": booking.payment_status,
+                "status":booking.Booking.status
             }
             for booking in bookings
         ]
@@ -358,6 +366,7 @@ async def get_bookings_of_spots_of_owner(db: Session, user_id: int):
             db.query(
                 Booking,
                 Spot.spot_title,
+                Spot.address.label("spot_address"),
                 Payment.amount,
                 Payment.status.label("payment_status")
             )
@@ -373,14 +382,101 @@ async def get_bookings_of_spots_of_owner(db: Session, user_id: int):
                 "user_id": booking.Booking.user_id,
                 "spot_id": booking.Booking.spot_id,
                 "spot_title": booking.spot_title,
+                "spot_address":booking.spot_address,
                 "total_slots": booking.Booking.total_slots,
                 "start_date_time": booking.Booking.start_date_time,
                 "end_date_time": booking.Booking.end_date_time,
                 "payment_id": booking.Booking.payment_id,
                 "payment_amount": booking.amount,
                 "payment_status": booking.payment_status,
+                "status":booking.Booking.status
             }
             for booking in bookings
         ]
+    except Exception as db_error:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(db_error)}")
+
+async def cancel_booking(db: Session, booking_id):
+    """
+    Cancel a booking by updating its status to "Cancelled" in the database.
+
+    Parameters:
+        db (Session): SQLAlchemy database session
+        booking_id (int): The ID of the booking to be cancelled
+
+    Returns:
+        int: The number of rows updated in the database (should be 1 if successful)
+
+    Example:
+        cancel_booking(db, 123)
+        cancel the booking with ID 123 by setting its status to "Cancelled"
+        return the number of rows updated
+    """
+    try:
+        db.query(Booking).filter(Booking.id == str(booking_id)).update({
+            "status": "Cancelled"
+        })
+        booking = db.query(Booking).filter(Booking.id == str(booking_id)).one()
+        spot = db.query(Spot).filter(Booking.id == str(booking_id)).filter(Booking.spot_id == Spot.spot_id).one()
+        db.query(Spot).filter(Booking.id == str(booking_id)).filter(Booking.spot_id == Spot.spot_id).update({
+            "available_slots": spot.available_slots + booking.total_slots
+        })
+        db.commit()
+        return booking
+    except Exception as db_error:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(db_error)}")
+
+async def check_in_booking(db: Session, booking_id):
+    """
+    Check in a booking by updating its status to "Checked In" in the database.
+
+    Parameters:
+        db (Session): SQLAlchemy database session
+        booking_id (int): The ID of the booking to be checked in
+
+    Returns:
+        int: The number of rows updated in the database (should be 1 if successful)
+
+    Example:
+        check_in_booking(db, 123)
+        check in the booking with ID 123 by setting its status to "Checked In"
+        return the number of rows updated
+    """
+    try:
+        booking = db.query(Booking).filter(Booking.id == str(booking_id)).update({
+            "status": "Checked In"
+        })
+        db.commit()
+        return booking
+    except Exception as db_error:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(db_error)}")
+
+async def check_out_booking(db: Session, booking_id):
+    """
+    Check out a booking by updating its status to "Completed" in the database.
+
+    Parameters:
+        db (Session): SQLAlchemy database session
+        booking_id (int): The ID of the booking to be checked out
+
+    Returns:
+        int: The number of rows updated in the database (should be 1 if successful)
+
+    Example:
+        check_out_booking(db, 123)
+        check out the booking with ID 123 by setting its status to "Completed"
+        return the number of rows updated
+    """
+    try:
+        db.query(Booking).filter(Booking.id == str(booking_id)).update({
+            "status": "Completed"
+        })
+        booking = db.query(Booking).filter(Booking.id == str(booking_id)).one()
+        spot = db.query(Spot).filter(Booking.id == str(booking_id)).filter(Booking.spot_id == Spot.spot_id).one()
+        db.query(Spot).filter(Booking.id == str(booking_id)).filter(Booking.spot_id == Spot.spot_id).update({
+            "available_slots": spot.available_slots + booking.total_slots
+        })
+        db.commit()
+        return booking
     except Exception as db_error:
         raise HTTPException(status_code=500, detail=f"Database error: {str(db_error)}")
