@@ -6,6 +6,10 @@ from sqlalchemy import pool
 from alembic import context
 from app.db.db import Base  # Import Base from session.py
 from app.db.oauth_model import OAuthUser  # Ensure models are imported
+from app.db.booking_model import Booking
+from app.db.payment_model import Payment
+from app.db.review_model import Review
+from app.db.spot_model import Spot
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

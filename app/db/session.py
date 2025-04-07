@@ -21,6 +21,13 @@ SessionLocal = sessionmaker(autoflush=False, bind=engine)
 
 # Create all tables
 # Base.metadata.create_all(bind=engine)
+from alembic import command
+from alembic.config import Config
+
+def run_migrations():
+    """Run Alembic migrations programmatically."""
+    alembic_cfg = Config("../../alembic.ini")
+    command.upgrade(alembic_cfg, "head")
 
 # Dependency to get a session instance
 def get_db():

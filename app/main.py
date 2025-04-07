@@ -1,6 +1,7 @@
 import fastapi
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.endpoints import auth, user, booking, spot, parking,review
+from app.db.session import run_migrations
 
 app = fastapi.FastAPI(title="Smart Parking")
 
@@ -23,3 +24,5 @@ app.include_router(booking.router, prefix="/bookings", tags=["Bookings"])
 app.include_router(spot.router, prefix="/spots", tags=["Spots"])
 app.include_router(parking.router,prefix="/spotdetails",tags=["Marker"])
 app.include_router(review.router,prefix="/review",tags=["Review"])
+
+run_migrations()
