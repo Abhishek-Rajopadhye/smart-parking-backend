@@ -86,7 +86,7 @@ async def callback(provider: str, request: Request, db: Session = Depends(get_db
 
         # Save user in the database
         user = create_oauth_user(db, user_data)
-        return RedirectResponse(f"http://localhost:5173/auth?token={access_token}&user_id={user_data['provider_id']}")
+        return RedirectResponse(f"https://smart-parking-frontend.onrender.com/auth?token={access_token}&user_id={user_data['provider_id']}")
 
     except HTTPException as http_error:
         raise http_error

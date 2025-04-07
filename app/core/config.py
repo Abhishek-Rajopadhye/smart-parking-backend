@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60  # Token expiry in minutes
 
     # CORS Settings
-    BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:5173", "https://smart-parking-frontend.onrender.com"]  # Allowed frontend origins
+    BACKEND_CORS_ORIGINS: list[str] = ["https://smart-parking-frontend.onrender.com"]  # Allowed frontend origins
 
     # Payment Gateway (example)
     RAZORPAY_KEY_ID:str = os.getenv("RAZORPAY_KEY_ID")
