@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 class BookingCreate(BaseModel):
     user_id: str
     spot_id: int

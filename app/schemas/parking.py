@@ -1,5 +1,6 @@
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+
 
 class ParkingSpot(BaseModel):
     spot_id: int
@@ -14,6 +15,7 @@ class ParkingSpot(BaseModel):
     open_time: str
     close_time: str
     description: Optional[str] = None
-    available_days: list[str]
-    image: Optional[str] = None
+    available_days: List[str]
+    image: Optional[List[str]] = None
 
+    model_config = ConfigDict(from_attributes=True)

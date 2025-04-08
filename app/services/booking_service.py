@@ -15,9 +15,11 @@ RAZORPAY_KEY_SECRET = settings.RAZORPAY_KEY_SECRET
 razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
 
 # Custom Exceptions
+
+
 class SlotUnavailableException(Exception):
     """Raised when no slots are available for booking."""
-    
+
     def __init__(self, message="No slots available for booking."):
         self.message = message
         super().__init__(self.message)
@@ -61,7 +63,7 @@ def check_available_slots(db: Session, spot_id: int, total_slots: int):
         query = text("SELECT * FROM spots WHERE spot_id = :spot_id")
         result = db.execute(query, {"spot_id": spot_id})
         spot = result.fetchone()
-        
+
         if not spot:
             raise SlotUnavailableException("Spot not found.")
 
@@ -76,16 +78,19 @@ def check_available_slots(db: Session, spot_id: int, total_slots: int):
             return True
         else:
             return False
-    
+
     except SlotUnavailableException as slot_error:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(slot_error))
-    
+
     except Exception as db_error:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Database error: {str(db_error)}")
+        raise HTTPException(
+            status_code=500, detail=f"Database error: {str(db_error)}")
 
 # Create a new booking
+
+
 async def create_booking(db: Session, booking_data):
     """
     Create a new booking for the user and add the details to the database.
@@ -111,15 +116,16 @@ async def create_booking(db: Session, booking_data):
         print("This is in service model")
 
         db.begin()
-        
+
         slot = db.execute(text(
             "SELECT * FROM spots WHERE spot_id = :spot_id AND available_slots >= :total_slots FOR UPDATE"),
-            {"spot_id": booking_data.spot_id, "total_slots": booking_data.total_slots}
+            {"spot_id": booking_data.spot_id,
+                "total_slots": booking_data.total_slots}
         ).fetchone()
-        
+
         if not slot:
             raise HTTPException(status_code=400, detail="No Slot Available")
-        
+
         try:
             order_data = {
                 "amount": booking_data.total_amount * 100,  # Convert INR to paise
@@ -130,8 +136,9 @@ async def create_booking(db: Session, booking_data):
             razorpay_order = razorpay_client.order.create(order_data)
         except Exception as payment_error:
             db.rollback()
-            raise HTTPException(status_code=402, detail=f"Failed to create Razorpay order: {str(payment_error)}")
-        
+            raise HTTPException(
+                status_code=402, detail=f"Failed to create Razorpay order: {str(payment_error)}")
+
         new_payment = Payment(
             user_id=booking_data.user_id,
             spot_id=booking_data.spot_id,
@@ -143,8 +150,9 @@ async def create_booking(db: Session, booking_data):
         db.commit()
         db.refresh(new_payment)
 
-        payment_status = "success"  # Simulating a successful payment (should be dynamic)
-        
+        # Simulating a successful payment (should be dynamic)
+        payment_status = "success"
+
         if payment_status == "success":
             new_payment.status = "success"
             db.commit()  # Update payment status
@@ -152,7 +160,8 @@ async def create_booking(db: Session, booking_data):
             new_payment.status = "failed"
             db.commit()
             db.rollback()
-            raise HTTPException(status_code=402, detail="Payment verification failed.")
+            raise HTTPException(
+                status_code=402, detail="Payment verification failed.")
 
         new_booking = Booking(
             user_id=booking_data.user_id,
@@ -165,31 +174,36 @@ async def create_booking(db: Session, booking_data):
         db.add(new_booking)
         db.execute(text(
             "UPDATE spots SET available_slots = available_slots - :total_slots WHERE spot_id = :spot_id"),
-            {"spot_id": booking_data.spot_id, "total_slots": booking_data.total_slots}
+            {"spot_id": booking_data.spot_id,
+                "total_slots": booking_data.total_slots}
         )
         db.commit()
 
         return {
-            "order_id": razorpay_order["id"], 
-            "amount": razorpay_order["amount"], 
+            "order_id": razorpay_order["id"],
+            "amount": razorpay_order["amount"],
             "currency": razorpay_order["currency"],
             "booking_id": new_booking.id,
             "payment_status": "success",
             "receipt": razorpay_order["receipt"]
         }
-    
+
     except HTTPException as http_error:
         db.rollback()
-        raise HTTPException(status_code=402, detail=str(payment_error))  # 402 Payment Required
+        raise HTTPException(status_code=402, detail=str(
+            payment_error))  # 402 Payment Required
     except BookingFailedException as booking_error:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(booking_error))
     except IntegrityError as db_error:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Database error: {str(db_error)}")
+        raise HTTPException(
+            status_code=500, detail=f"Database error: {str(db_error)}")
     except Exception as unexpected_error:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(unexpected_error)}")
+        raise HTTPException(
+            status_code=500, detail=f"Unexpected error: {str(unexpected_error)}")
+
 
 async def get_bookings(db: Session):
     """
@@ -226,19 +240,20 @@ async def get_bookings(db: Session):
                 "user_id": booking.Booking.user_id,
                 "spot_id": booking.Booking.spot_id,
                 "spot_title": booking.spot_title,
-                "spot_address":booking.spot_address,
+                "spot_address": booking.spot_address,
                 "total_slots": booking.Booking.total_slots,
                 "start_date_time": booking.Booking.start_date_time,
                 "end_date_time": booking.Booking.end_date_time,
                 "payment_id": booking.Booking.payment_id,
                 "payment_amount": booking.amount,
                 "payment_status": booking.payment_status,
-                "status":booking.Booking.status
+                "status": booking.Booking.status
             }
             for booking in bookings
         ]
     except Exception as db_error:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(db_error)}")
+        raise HTTPException(
+            status_code=500, detail=f"Database error: {str(db_error)}")
 
 
 async def get_booking_by_user(db: Session, user_id: int):
@@ -278,19 +293,20 @@ async def get_booking_by_user(db: Session, user_id: int):
                 "user_id": booking.Booking.user_id,
                 "spot_id": booking.Booking.spot_id,
                 "spot_title": booking.spot_title,
-                "spot_address":booking.spot_address,
+                "spot_address": booking.spot_address,
                 "total_slots": booking.Booking.total_slots,
                 "start_date_time": booking.Booking.start_date_time,
                 "end_date_time": booking.Booking.end_date_time,
                 "payment_id": booking.Booking.payment_id,
                 "payment_amount": booking.amount,
                 "payment_status": booking.payment_status,
-                "status":booking.Booking.status
+                "status": booking.Booking.status
             }
             for booking in bookings
         ]
     except Exception as db_error:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(db_error)}")
+        raise HTTPException(
+            status_code=500, detail=f"Database error: {str(db_error)}")
 
 
 async def get_booking_by_spot(db: Session, spot_id: int):
@@ -330,19 +346,20 @@ async def get_booking_by_spot(db: Session, spot_id: int):
                 "user_id": booking.Booking.user_id,
                 "spot_id": booking.Booking.spot_id,
                 "spot_title": booking.spot_title,
-                "spot_address":booking.spot_address,
+                "spot_address": booking.spot_address,
                 "total_slots": booking.Booking.total_slots,
                 "start_date_time": booking.Booking.start_date_time,
                 "end_date_time": booking.Booking.end_date_time,
                 "payment_id": booking.Booking.payment_id,
                 "payment_amount": booking.amount,
                 "payment_status": booking.payment_status,
-                "status":booking.Booking.status
+                "status": booking.Booking.status
             }
             for booking in bookings
         ]
     except Exception as db_error:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(db_error)}")
+        raise HTTPException(
+            status_code=500, detail=f"Database error: {str(db_error)}")
 
 
 async def get_bookings_of_spots_of_owner(db: Session, user_id: int):
@@ -382,19 +399,21 @@ async def get_bookings_of_spots_of_owner(db: Session, user_id: int):
                 "user_id": booking.Booking.user_id,
                 "spot_id": booking.Booking.spot_id,
                 "spot_title": booking.spot_title,
-                "spot_address":booking.spot_address,
+                "spot_address": booking.spot_address,
                 "total_slots": booking.Booking.total_slots,
                 "start_date_time": booking.Booking.start_date_time,
                 "end_date_time": booking.Booking.end_date_time,
                 "payment_id": booking.Booking.payment_id,
                 "payment_amount": booking.amount,
                 "payment_status": booking.payment_status,
-                "status":booking.Booking.status
+                "status": booking.Booking.status
             }
             for booking in bookings
         ]
     except Exception as db_error:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(db_error)}")
+        raise HTTPException(
+            status_code=500, detail=f"Database error: {str(db_error)}")
+
 
 async def cancel_booking(db: Session, booking_id):
     """
@@ -417,14 +436,17 @@ async def cancel_booking(db: Session, booking_id):
             "status": "Cancelled"
         })
         booking = db.query(Booking).filter(Booking.id == str(booking_id)).one()
-        spot = db.query(Spot).filter(Booking.id == str(booking_id)).filter(Booking.spot_id == Spot.spot_id).one()
+        spot = db.query(Spot).filter(Booking.id == str(booking_id)).filter(
+            Booking.spot_id == Spot.spot_id).one()
         db.query(Spot).filter(Booking.id == str(booking_id)).filter(Booking.spot_id == Spot.spot_id).update({
             "available_slots": spot.available_slots + booking.total_slots
         })
         db.commit()
         return booking
     except Exception as db_error:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(db_error)}")
+        raise HTTPException(
+            status_code=500, detail=f"Database error: {str(db_error)}")
+
 
 async def check_in_booking(db: Session, booking_id):
     """
@@ -449,7 +471,9 @@ async def check_in_booking(db: Session, booking_id):
         db.commit()
         return booking
     except Exception as db_error:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(db_error)}")
+        raise HTTPException(
+            status_code=500, detail=f"Database error: {str(db_error)}")
+
 
 async def check_out_booking(db: Session, booking_id):
     """
@@ -471,12 +495,15 @@ async def check_out_booking(db: Session, booking_id):
         db.query(Booking).filter(Booking.id == str(booking_id)).update({
             "status": "Completed"
         })
+
         booking = db.query(Booking).filter(Booking.id == str(booking_id)).one()
-        spot = db.query(Spot).filter(Booking.id == str(booking_id)).filter(Booking.spot_id == Spot.spot_id).one()
+        spot = db.query(Spot).filter(Booking.id == str(booking_id)).filter(
+            Booking.spot_id == Spot.spot_id).one()
         db.query(Spot).filter(Booking.id == str(booking_id)).filter(Booking.spot_id == Spot.spot_id).update({
             "available_slots": spot.available_slots + booking.total_slots
         })
         db.commit()
         return booking
     except Exception as db_error:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(db_error)}")
+        raise HTTPException(
+            status_code=500, detail=f"Database error: {str(db_error)}")

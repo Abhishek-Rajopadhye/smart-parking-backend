@@ -2,7 +2,8 @@ from app.schemas.spot import AddSpot
 from sqlalchemy.orm import Session
 from app.db.spot_model import Spot
 from fastapi import HTTPException
-import base64 
+import base64
+
 
 def add_spot(spot: AddSpot, db: Session):
     """
@@ -22,7 +23,10 @@ def add_spot(spot: AddSpot, db: Session):
     """
     try:
         #   print(spot)
-        image_data = base64.b64decode(spot.image)
+        image_blobs = []
+        for image_b64 in (spot.image or []):
+            image_data = base64.b64decode(image_b64)
+            image_blobs.append(image_data)
         new_spot = Spot(
             address=spot.spot_address,
             owner_id=spot.owner_id,
@@ -36,7 +40,7 @@ def add_spot(spot: AddSpot, db: Session):
             close_time=spot.close_time,
             description=spot.spot_description,
             available_days=spot.available_days,
-            image=image_data
+            image=image_blobs
         )
         db.add(new_spot)
         db.commit()
@@ -44,4 +48,5 @@ def add_spot(spot: AddSpot, db: Session):
         return {"message": "Spot added successfully.", "spot_id": new_spot.spot_id}
     except Exception as e:
         print(e)
-        raise HTTPException(status_code=400, detail="Error occur during adding spot.")
+        raise HTTPException(
+            status_code=400, detail="Error occur during adding spot.")

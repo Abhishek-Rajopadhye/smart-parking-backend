@@ -7,6 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+
 async def get_oauth_token(provider: str, code: str) -> dict:
     """
     Exchange OAuth2 code for an access token.
@@ -56,13 +57,17 @@ async def get_oauth_token(provider: str, code: str) -> dict:
             )
 
             if response.status_code != 200:
-                raise HTTPException(status_code=400, detail="Failed to obtain access token")
+                raise HTTPException(
+                    status_code=400, detail="Failed to obtain access token")
 
             return response.json()
     except httpx.HTTPError as http_error:
-        raise HTTPException(status_code=500, detail=f"HTTP error occurred: {str(http_error)}")
+        raise HTTPException(
+            status_code=500, detail=f"HTTP error occurred: {str(http_error)}")
     except Exception as general_error:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(general_error)}")
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(general_error)}")
+
 
 async def get_oauth_user_info(provider: str, access_token: str) -> dict:
     """
@@ -107,12 +112,15 @@ async def get_oauth_user_info(provider: str, access_token: str) -> dict:
             )
 
             if response.status_code != 200:
-                raise HTTPException(status_code=400, detail="Failed to fetch user info")
+                raise HTTPException(
+                    status_code=400, detail="Failed to fetch user info")
 
             return response.json()
     except httpx.HTTPError as http_error:
-        raise HTTPException(status_code=500, detail=f"HTTP error occurred: {str(http_error)}")
+        raise HTTPException(
+            status_code=500, detail=f"HTTP error occurred: {str(http_error)}")
     except HTTPException as http_exception:
         raise http_exception
     except Exception as general_error:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(general_error)}")
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(general_error)}")

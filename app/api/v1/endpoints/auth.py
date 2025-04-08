@@ -10,6 +10,7 @@ from app.core.config import settings
 
 router = APIRouter()
 
+
 @router.get("/{provider}/login")
 async def login(provider: str):
     """
@@ -31,15 +32,19 @@ async def login(provider: str):
             raise HTTPException(status_code=400, detail="Invalid provider")
 
         config = settings.model_dump()
-        auth_url = (    
-            f"{config[f'{provider.upper()}_AUTH_URL']}?client_id={config[f'{provider.upper()}_CLIENT_ID'].strip()}"
-            f"&redirect_uri={config[f'{provider.upper()}_REDIRECT_URI']}&response_type=code&scope=openid%20email%20profile"
+        auth_url = (
+            f"{config[f'{provider.upper()}_AUTH_URL']}?client_id={
+                config[f'{provider.upper()}_CLIENT_ID'].strip()}"
+            f"&redirect_uri={config[f'{provider.upper()}_REDIRECT_URI']
+                             }&response_type=code&scope=openid%20email%20profile"
         )
         return RedirectResponse(auth_url)
     except HTTPException as http_error:
         raise http_error
     except Exception as general_error:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(general_error)}")
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(general_error)}")
+
 
 @router.get("/{provider}/callback")
 async def callback(provider: str, request: Request, db: Session = Depends(get_db)):
@@ -62,7 +67,8 @@ async def callback(provider: str, request: Request, db: Session = Depends(get_db
     """
     code = request.query_params.get("code")
     if not code:
-        raise HTTPException(status_code=401, detail="Authorization code not provided")
+        raise HTTPException(
+            status_code=401, detail="Authorization code not provided")
 
     try:
         # Exchange code for token
@@ -70,7 +76,8 @@ async def callback(provider: str, request: Request, db: Session = Depends(get_db
         access_token = token_data.get("access_token")
 
         if not access_token:
-            raise HTTPException(status_code=400, detail="Failed to obtain access token")
+            raise HTTPException(
+                status_code=400, detail="Failed to obtain access token")
 
         # Get user info
         user_info = await get_oauth_user_info(provider, access_token)
@@ -86,9 +93,10 @@ async def callback(provider: str, request: Request, db: Session = Depends(get_db
 
         # Save user in the database
         user = create_oauth_user(db, user_data)
-        return RedirectResponse(f"https://smart-parking-frontend.onrender.com/auth?token={access_token}&user_id={user_data['provider_id']}")
+        return RedirectResponse(f"https://smart-parking-backend-4qec.onrender.com/auth?token={access_token}&user_id={user_data['provider_id']}")
 
     except HTTPException as http_error:
         raise http_error
     except Exception as general_error:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(general_error)}")
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(general_error)}")

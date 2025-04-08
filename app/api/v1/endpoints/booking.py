@@ -6,6 +6,7 @@ from app.schemas.booking import BookingCreate
 
 router = APIRouter()
 
+
 @router.get("/")
 async def get_booking(db: Session = Depends(get_db)):
     """
@@ -18,6 +19,7 @@ async def get_booking(db: Session = Depends(get_db)):
         List[dict]: List of all bookings
     """
     return await get_bookings(db)
+
 
 @router.get("/user/{user_id}")
 async def get_booking_by_user_id(user_id: int, db: Session = Depends(get_db)):
@@ -33,6 +35,7 @@ async def get_booking_by_user_id(user_id: int, db: Session = Depends(get_db)):
     """
     return await get_booking_by_user(db, user_id)
 
+
 @router.get("/owner/{user_id}")
 async def get_booking_of_spots_of_owner(user_id: int, db: Session = Depends(get_db)):
     """
@@ -47,6 +50,7 @@ async def get_booking_of_spots_of_owner(user_id: int, db: Session = Depends(get_
     """
     return await get_bookings_of_spots_of_owner(db, user_id)
 
+
 @router.get("/spot/{spot_id}")
 async def get_booking_by_spot_id(spot_id: int, db: Session = Depends(get_db)):
     """
@@ -60,6 +64,7 @@ async def get_booking_by_spot_id(spot_id: int, db: Session = Depends(get_db)):
         List[dict]: List of bookings for the specified spot
     """
     return await get_booking_by_spot(db, spot_id)
+
 
 @router.post("/book-spot")
 async def book_spot(booking_data: BookingCreate, db: Session = Depends(get_db)):
@@ -89,6 +94,7 @@ async def book_spot(booking_data: BookingCreate, db: Session = Depends(get_db)):
         print(exception)
         raise HTTPException(status_code=400, detail="Failed to book the spot")
 
+
 @router.delete("/{booking_id}")
 async def cancel_spot_booking(booking_id: str, db: Session = Depends(get_db)):
     """
@@ -106,7 +112,8 @@ async def cancel_spot_booking(booking_id: str, db: Session = Depends(get_db)):
         return response
     except Exception as exception:
         print(exception)
-        raise HTTPException(status_code=500, detail="Failed to cancel the booking")
+        raise HTTPException(
+            status_code=500, detail="Failed to cancel the booking")
 
 
 @router.put("/checkin/{booking_id}")
@@ -131,7 +138,8 @@ async def check_in_spot_booking(booking_id: str, db: Session = Depends(get_db)):
         return response
     except Exception as exception:
         print(exception)
-        raise HTTPException(status_code=500, detail="Failed to check in for the booking")
+        raise HTTPException(
+            status_code=500, detail="Failed to check in for the booking")
 
 
 @router.put("/checkout/{booking_id}")
@@ -156,4 +164,5 @@ async def check_out_spot_booking(booking_id: str, db: Session = Depends(get_db))
         return response
     except Exception as exception:
         print(exception)
-        raise HTTPException(status_code=500, detail="Failed to check out for the booking")
+        raise HTTPException(
+            status_code=500, detail="Failed to check out for the booking")

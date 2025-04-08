@@ -3,6 +3,7 @@
 from sqlalchemy import Column, Integer, String
 from app.db.db import Base
 
+
 class OAuthUser(Base):
     __tablename__ = "oauth_users"
 
@@ -14,6 +15,5 @@ class OAuthUser(Base):
     phone = Column(String, nullable=True)
     profile_picture = Column(String, nullable=True)
     access_token = Column(String)
-    refresh_token = Column(String, nullable=True)  # If provider supports refresh tokens
-
- 
+    # If provider supports refresh tokens
+    refresh_token = Column(String, nullable=True)

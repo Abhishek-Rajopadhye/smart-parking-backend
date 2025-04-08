@@ -14,22 +14,18 @@ from app.db.db import Base
 DATABASE_URL = settings.DATABASE_URL
 
 # Create database engine
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {})
+engine = create_engine(DATABASE_URL, connect_args={
+                       "check_same_thread": False} if "sqlite" in DATABASE_URL else {})
 
 # Create a session factory
 SessionLocal = sessionmaker(autoflush=False, bind=engine)
 
 # Create all tables
-# Base.metadata.create_all(bind=engine)
-from alembic import command
-from alembic.config import Config
-
-def run_migrations():
-    """Run Alembic migrations programmatically."""
-    alembic_cfg = Config("../../alembic.ini")
-    command.upgrade(alembic_cfg, "head")
+Base.metadata.create_all(bind=engine)
 
 # Dependency to get a session instance
+
+
 def get_db():
     """Yield a new database session for dependency injection in FastAPI routes."""
     db = SessionLocal()

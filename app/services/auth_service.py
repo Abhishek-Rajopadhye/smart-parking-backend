@@ -5,6 +5,7 @@ from app.db.oauth_model import OAuthUser
 from typing import Optional, Literal
 import requests
 
+
 def verify_google_token(token: str) -> Optional[dict]:
     """
     Verify a Google OAuth token by calling Google's tokeninfo endpoint.
@@ -22,10 +23,10 @@ def verify_google_token(token: str) -> Optional[dict]:
     try:
         # Google's token verification endpoint
         tokeninfo_url = f"https://oauth2.googleapis.com/tokeninfo?access_token={token}"
-        
+
         # Send request to Google's API
         response = requests.get(tokeninfo_url)
-        
+
         # Check if request was successful
         if response.status_code == 200:
             user_info = response.json()
@@ -38,7 +39,8 @@ def verify_google_token(token: str) -> Optional[dict]:
                 "raw_info": user_info
             }
         else:
-            print(f"Google token verification failed: {response.status_code}, {response.text}")
+            print(
+                f"Google token verification failed: {response.status_code}, {response.text}")
             return None
     except requests.RequestException as request_error:
         print(f"Google token verification request error: {request_error}")
@@ -46,6 +48,7 @@ def verify_google_token(token: str) -> Optional[dict]:
     except ValueError as value_error:
         print(f"Google token verification value error: {value_error}")
         raise value_error
+
 
 def verify_github_token(token: str) -> Optional[dict]:
     """
@@ -65,26 +68,27 @@ def verify_github_token(token: str) -> Optional[dict]:
         # GitHub's user API endpoint
         user_url = "https://api.github.com/user"
         email_url = "https://api.github.com/user/emails"
-        
+
         # Set up headers with the token
         headers = {
             "Authorization": f"token {token}",
             "Accept": "application/vnd.github.v3+json"
         }
-        
+
         # Get user info
         user_response = requests.get(user_url, headers=headers)
-        
+
         if user_response.status_code != 200:
-            print(f"GitHub token verification failed: {user_response.status_code}, {user_response.text}")
+            print(
+                f"GitHub token verification failed: {user_response.status_code}, {user_response.text}")
             return None
-        
+
         user_info = user_response.json()
-        
+
         # Get email (might be private, so we need a separate call)
         email_response = requests.get(email_url, headers=headers)
         email = None
-        
+
         if email_response.status_code == 200:
             emails = email_response.json()
             # Find primary email
@@ -92,7 +96,7 @@ def verify_github_token(token: str) -> Optional[dict]:
                 if email_obj.get("primary"):
                     email = email_obj.get("email")
                     break
-        
+
         return {
             "provider": "github",
             "user_id": str(user_info.get("id")),
@@ -108,6 +112,7 @@ def verify_github_token(token: str) -> Optional[dict]:
     except ValueError as value_error:
         print(f"GitHub token verification value error: {value_error}")
         raise value_error
+
 
 def verify_oauth_token(token: str, provider: Literal["google", "github"] = None) -> Optional[dict]:
     """
@@ -132,13 +137,14 @@ def verify_oauth_token(token: str, provider: Literal["google", "github"] = None)
         elif provider == "github":
             return verify_github_token(token)
         else:
-            raise KeyError("Invalid OAuth provider")        
+            raise KeyError("Invalid OAuth provider")
     except KeyError as invalidOAuthProvider:
         raise invalidOAuthProvider
     except ValueError as value_error:
         raise value_error
     except requests.RequestException as request_error:
         raise request_error
+
 
 def get_user_by_provider_id(db: Session, provider: str, provider_id: str):
     """
@@ -154,6 +160,7 @@ def get_user_by_provider_id(db: Session, provider: str, provider_id: str):
     """
     return db.query(OAuthUser).filter(OAuthUser.provider == provider, OAuthUser.provider_id == provider_id).first()
 
+
 def create_oauth_user(db: Session, user_data: dict):
     """
     Create a new OAuth user or update an existing one.
@@ -165,7 +172,8 @@ def create_oauth_user(db: Session, user_data: dict):
     Returns:
         OAuthUser: The created or updated user object
     """
-    user = get_user_by_provider_id(db, user_data["provider"], user_data["provider_id"])
+    user = get_user_by_provider_id(
+        db, user_data["provider"], user_data["provider_id"])
 
     if user:
         user.access_token = user_data["access_token"]

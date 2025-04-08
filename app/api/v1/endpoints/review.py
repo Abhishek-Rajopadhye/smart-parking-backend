@@ -7,6 +7,7 @@ from app.db.session import get_db
 
 router = APIRouter()
 
+
 @router.get("/{review_id}", response_model=Review)
 def read_review(review_id: int, db: Session = Depends(get_db)):
     """
@@ -27,6 +28,7 @@ def read_review(review_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Review not found")
     return db_review
 
+
 @router.get("/spot/{spot_id}", response_model=List[Review])
 def read_reviews_by_spot(spot_id: int, db: Session = Depends(get_db)):
     """
@@ -41,6 +43,7 @@ def read_reviews_by_spot(spot_id: int, db: Session = Depends(get_db)):
     """
     return get_reviews_by_spot(db, spot_id)
 
+
 @router.post("/", response_model=Review)
 def create_new_review(review: ReviewCreate, db: Session = Depends(get_db)):
     """
@@ -54,6 +57,7 @@ def create_new_review(review: ReviewCreate, db: Session = Depends(get_db)):
         Review: The created review.
     """
     return create_review(db, review)
+
 
 @router.put("/{review_id}", response_model=Review)
 def update_existing_review(review_id: int, review: ReviewUpdate, db: Session = Depends(get_db)):
@@ -75,6 +79,7 @@ def update_existing_review(review_id: int, review: ReviewUpdate, db: Session = D
     if db_review is None:
         raise HTTPException(status_code=404, detail="Review not found")
     return db_review
+
 
 @router.delete("/{review_id}", response_model=bool)
 def delete_existing_review(review_id: int, db: Session = Depends(get_db)):

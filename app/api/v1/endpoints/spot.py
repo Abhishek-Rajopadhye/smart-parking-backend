@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session #interact with database
+from sqlalchemy.orm import Session  # interact with database
 from app.db.session import get_db
 from app.services.spot_service import add_spot
 from app.schemas.spot import AddSpot
 
 router = APIRouter()
+
 
 @router.post("/add-spot")
 def add_spot_route(spot_data: AddSpot, db: Session = Depends(get_db)):

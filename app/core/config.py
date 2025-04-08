@@ -7,6 +7,7 @@ from functools import lru_cache
 
 load_dotenv()
 
+
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Smart Parking"
     API_V1_STR: str = "/api/v1"
@@ -20,7 +21,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
     # Google OAuth
-    
+
     GOOGLE_CLIENT_ID: str = str(os.getenv("GOOGLE_CLIENT_ID"))
     GOOGLE_CLIENT_SECRET: str = str(os.getenv("GOOGLE_CLIENT_SECRET"))
     GOOGLE_REDIRECT_URI: str = "https://smart-parking-backend-4qec.onrender.com/api/v1/auth/google/callback"
@@ -42,14 +43,17 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60  # Token expiry in minutes
 
     # CORS Settings
-    BACKEND_CORS_ORIGINS: list[str] = ["https://smart-parking-frontend.onrender.com"]  # Allowed frontend origins
+    BACKEND_CORS_ORIGINS: list[str] = [
+        "https://smart-parking-frontend.onrender.com"]  # Allowed frontend origins
 
     # Payment Gateway (example)
-    RAZORPAY_KEY_ID:str = os.getenv("RAZORPAY_KEY_ID")
-    RAZORPAY_KEY_SECRET:str = os.getenv("RAZORPAY_KEY_SECRET")
+    RAZORPAY_KEY_ID: str = os.getenv("RAZORPAY_KEY_ID")
+    RAZORPAY_KEY_SECRET: str = os.getenv("RAZORPAY_KEY_SECRET")
+
 
 @lru_cache()
 def get_settings():
     return Settings()
+
 
 settings = get_settings()

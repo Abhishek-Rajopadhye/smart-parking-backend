@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 
+
 class AddSpot(BaseModel):
     spot_address: str
     owner_id: str
@@ -13,5 +14,5 @@ class AddSpot(BaseModel):
     open_time: str
     close_time: str
     spot_description: Optional[str] = None
-    available_days: list[str]=None
-    image: str = None
+    available_days: list[str] = None
+    image: Optional[list[str]] = None
