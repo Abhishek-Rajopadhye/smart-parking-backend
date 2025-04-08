@@ -125,7 +125,7 @@ async def create_booking(db: Session, booking_data):
 
         if not slot:
             raise HTTPException(status_code=400, detail="No Slot Available")
-
+        print("after not slot")
         try:
             order_data = {
                 "amount": booking_data.total_amount * 100,  # Convert INR to paise
@@ -133,7 +133,9 @@ async def create_booking(db: Session, booking_data):
                 "receipt": f"receipt_{booking_data.user_id}",
                 "payment_capture": 1  # Auto capture
             }
+            print("before razorpay order")
             razorpay_order = razorpay_client.order.create(order_data)
+            print("after razorpay order")
         except Exception as payment_error:
             db.rollback()
             raise HTTPException(
