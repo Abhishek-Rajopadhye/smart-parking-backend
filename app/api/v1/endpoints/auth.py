@@ -64,6 +64,8 @@ async def callback(provider: str, request: Request, db: Session = Depends(get_db
             500: If an internal server error occurs
     """
     code = request.query_params.get("code")
+    config = settings.model_dump()
+
     if not code:
         raise HTTPException(
             status_code=401, detail="Authorization code not provided")
@@ -91,7 +93,7 @@ async def callback(provider: str, request: Request, db: Session = Depends(get_db
 
         # Save user in the database
         user = create_oauth_user(db, user_data)
-        return RedirectResponse(f"https://smart-parking-frontend.onrender.com/auth?token={access_token}&user_id={user_data['provider_id']}")
+        return RedirectResponse(f"{config["FRONTEND_URL"]}/auth?token={access_token}&user_id={user_data['provider_id']}")
 
     except HTTPException as http_error:
         raise http_error

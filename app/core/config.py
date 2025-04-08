@@ -19,12 +19,15 @@ class Settings(BaseSettings):
     DB_NAME: str = os.getenv("DB_NAME", "smart_parking")
 
     DATABASE_URL: str = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    
+    BACKEND_URL: str = os.getenv("BACKEND_URL", "http://localhost:8000")
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
     # Google OAuth
 
     GOOGLE_CLIENT_ID: str = str(os.getenv("GOOGLE_CLIENT_ID"))
     GOOGLE_CLIENT_SECRET: str = str(os.getenv("GOOGLE_CLIENT_SECRET"))
-    GOOGLE_REDIRECT_URI: str = "https://smart-parking-backend-4qec.onrender.com/api/v1/auth/google/callback"
+    GOOGLE_REDIRECT_URI: str = BACKEND_URL + "/api/v1/auth/google/callback"
     GOOGLE_AUTH_URL: str = "https://accounts.google.com/o/oauth2/auth"
     GOOGLE_TOKEN_URL: str = "https://oauth2.googleapis.com/token"
     GOOGLE_USERINFO_URL: str = "https://www.googleapis.com/oauth2/v2/userinfo"
@@ -32,7 +35,7 @@ class Settings(BaseSettings):
     # GitHub OAuth
     GITHUB_CLIENT_ID: str = str(os.getenv("GITHUB_CLIENT_ID"))
     GITHUB_CLIENT_SECRET: str = str(os.getenv("GITHUB_CLIENT_SECRET"))
-    GITHUB_REDIRECT_URI: str = "https://smart-parking-backend-4qec.onrender.com/api/v1/auth/github/callback"
+    GITHUB_REDIRECT_URI: str = BACKEND_URL + "/api/v1/auth/github/callback"
     GITHUB_AUTH_URL: str = "https://github.com/login/oauth/authorize"
     GITHUB_TOKEN_URL: str = "https://github.com/login/oauth/access_token"
     GITHUB_USERINFO_URL: str = "https://api.github.com/user"
@@ -44,7 +47,7 @@ class Settings(BaseSettings):
 
     # CORS Settings
     BACKEND_CORS_ORIGINS: list[str] = [
-        "https://smart-parking-frontend.onrender.com"]  # Allowed frontend origins
+        BACKEND_URL, FRONTEND_URL]  # Allowed frontend origins
 
     # Payment Gateway (example)
     RAZORPAY_KEY_ID: str = os.getenv("RAZORPAY_KEY_ID")
