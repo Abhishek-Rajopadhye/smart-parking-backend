@@ -2,13 +2,48 @@ from sqlalchemy import text
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session  # interact with database
 from app.db.session import get_db
-from app.services.parking_service import get_all_parking_spots
+from app.services.parking_service import get_all_parking_spots, get_parking_spot_by_id
 from app.schemas.parking import ParkingSpot
 from typing import List
 import base64
 
 router = APIRouter()
 
+@router.get("/get-spot/{spot_id}", response_model=ParkingSpot)
+async def fetch_parking_spot(spot_id: int, db: Session = Depends(get_db)):
+    try:
+        spot = get_parking_spot_by_id(db, spot_id)
+        if not spot:
+            raise HTTPException(status_code=404, detail="Spot not found")
+
+        # Manually assemble a dict matching your Pydantic schema:
+        spot_dict = {
+            "spot_id":         spot.spot_id,
+            "address":         spot.address,
+            "owner_id":        spot.owner_id,
+            "spot_title":      spot.spot_title,
+            "latitude":        spot.latitude,
+            "longitude":       spot.longitude,
+            "available_slots": spot.available_slots,
+            "no_of_slots":     spot.no_of_slots,
+            "hourly_rate":     spot.hourly_rate,
+            "open_time":       spot.open_time,
+            "close_time":      spot.close_time,
+            "description":     spot.description,
+            "available_days":  spot.available_days,
+            # **Convert each bytes blob to a base64 string:**
+            "image": [
+                base64.b64encode(blob).decode("utf-8")
+                for blob in (spot.image or [])
+            ],
+        }
+
+        return spot_dict
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f"InternalServerError: {error}"
+        )
 
 @router.get("/getparkingspot", response_model=List[ParkingSpot])
 async def fetch_parking_spots(db: Session = Depends(get_db)):
