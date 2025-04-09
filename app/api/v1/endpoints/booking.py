@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.db.session import get_db
-from app.services.booking_service import create_booking, get_bookings, get_booking_by_user, get_booking_by_spot, get_bookings_of_spots_of_owner, cancel_booking, check_in_booking, check_out_booking
+from app.services.booking_service import create_booking, get_bookings, get_booking_by_user, update_booking, get_booking_by_spot, get_bookings_of_spots_of_owner, cancel_booking, check_in_booking, check_out_booking
 from app.schemas.booking import BookingCreate
+from app.schemas.payment import Payment
 
 router = APIRouter()
 
@@ -115,6 +116,14 @@ async def cancel_spot_booking(booking_id: str, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=500, detail="Failed to cancel the booking")
 
+@router.post("/update-payment-status")
+async def update_payment_status(booking_data: Payment, db: Session = Depends(get_db)):
+    try:
+        print(booking_data.__dict__)
+        response = await update_booking(db, booking_data)
+        return response
+    except Exception as exception:
+        raise HTTPException(status_code=400, detail="Failed to update the payment status")
 
 @router.put("/checkin/{booking_id}")
 async def check_in_spot_booking(booking_id: str, db: Session = Depends(get_db)):

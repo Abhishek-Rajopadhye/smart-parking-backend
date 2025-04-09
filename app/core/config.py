@@ -18,10 +18,10 @@ class Settings(BaseSettings):
     DB_NAME: str = os.getenv("DB_NAME", "smart_parking")
  
     DATABASE_URL: str = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-   
+
     BACKEND_URL: str = os.getenv("BACKEND_URL", "http://localhost:8000")
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
- 
+
     # Google OAuth
  
     GOOGLE_CLIENT_ID: str = str(os.getenv("GOOGLE_CLIENT_ID"))
@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     BACKEND_CORS_ORIGINS: list[str] = [
         BACKEND_URL, FRONTEND_URL]  # Allowed frontend origins
  
+
     # Payment Gateway (example)
     RAZORPAY_KEY_ID: str = os.getenv("RAZORPAY_KEY_ID")
     RAZORPAY_KEY_SECRET: str = os.getenv("RAZORPAY_KEY_SECRET")
