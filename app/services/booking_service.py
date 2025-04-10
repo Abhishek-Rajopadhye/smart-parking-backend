@@ -168,12 +168,12 @@ async def create_booking(db: Session, booking_data):
         #     payment_id=new_payment.id
         # )
         #     db.add(new_booking)
-        #     db.execute(text(
-        #     "UPDATE spots SET available_slots = available_slots - :total_slots WHERE spot_id = :spot_id"),
-        #     {"spot_id": booking_data.spot_id,
-        #         "total_slots": booking_data.total_slots}
-        #      )
-        #     db.commit()  # Update payment status
+        db.execute(text(
+        "UPDATE spots SET available_slots = available_slots - :total_slots WHERE spot_id = :spot_id"),
+        {"spot_id": booking_data.spot_id,
+        "total_slots": booking_data.total_slots}
+        )
+        db.commit()  # Update payment status
         # else:
         #     new_payment.status = "failed"
         #     db.commit()
@@ -238,8 +238,8 @@ async def update_booking(db: Session, payment_data: Payment):
             if not spot:
                 raise HTTPException(status_code=404, detail="Spot not found.")
 
-            if spot.available_slots < payment_data.total_slots:
-                raise HTTPException(status_code=400, detail="Not enough slots available.")
+            # if spot.available_slots < payment_data.total_slots:
+                # raise HTTPException(status_code=400, detail="Not enough slots available.")
 
             booking = Booking(
                 user_id=payment.user_id,
@@ -253,7 +253,7 @@ async def update_booking(db: Session, payment_data: Payment):
 
             db.add(booking)
             # Update the available slots atomically
-            spot.available_slots -= booking.total_slots
+            #spot.available_slots -= booking.total_slots
 
             db.commit()
             db.refresh(booking)
@@ -274,6 +274,21 @@ async def update_booking(db: Session, payment_data: Payment):
         db.rollback()
         print("Unhandled error:", str(e))
         raise HTTPException(status_code=500, detail="An unexpected error occurred while processing your booking.")
+    finally:
+        try:
+            if not (payment and payment.status == "success"):
+                # db.execute(text(
+                #     "UPDATE spots SET available_slots = available_slots + :total_slots WHERE spot_id = :spot_id"),
+                #     {"spot_id": payment_data.spot_id,
+                #     "total_slots": payment_data.total_slots}
+                # )
+                spot.available_slots += payment_data.total_slots
+                db.commit()
+        except Exception as e:
+            print("Error during slot release in finally block:", str(e))
+        finally:
+            db.close()
+
 
 async def get_bookings(db: Session):
     """
