@@ -238,8 +238,8 @@ async def update_booking(db: Session, payment_data: Payment):
             if not spot:
                 raise HTTPException(status_code=404, detail="Spot not found.")
 
-            if spot.available_slots < payment_data.total_slots:
-                raise HTTPException(status_code=400, detail="Not enough slots available.")
+            # if spot.available_slots < payment_data.total_slots:
+                # raise HTTPException(status_code=400, detail="Not enough slots available.")
 
             booking = Booking(
                 user_id=payment.user_id,
