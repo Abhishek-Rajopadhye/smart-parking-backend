@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session  # interact with database
 from app.db.session import get_db
-from app.services.spot_service import add_spot
+from app.services.spot_service import add_spot, get_spot_list_of_owner
 from app.schemas.spot import AddSpot
 
 router = APIRouter()
@@ -34,3 +34,18 @@ def add_spot_route(spot_data: AddSpot, db: Session = Depends(get_db)):
     except Exception as exception:
         print(exception)
         raise HTTPException(status_code=400, detail=exception.detail)
+
+
+@router.get("/owner/{user_id}")
+def get_spots_of_owner(user_id: int, db: Session = Depends(get_db)):
+    """
+    Retrieve all spots owned by a specific user.
+
+    Args:
+        user_id (int): User ID
+        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
+
+    Returns:
+        List[dict]: List of spots for the specified user
+    """
+    return get_spot_list_of_owner(user_id, db)

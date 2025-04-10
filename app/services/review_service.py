@@ -33,17 +33,17 @@ def get_reviews_by_spot(db: Session, spot_id: int) -> List[ReviewInDB]:
         Review.spot_id == spot_id).options(joinedload(Review.user)).all()
     return [
         ReviewInDB(
-            id=r.id,
-            created_at=r.created_at,
-            user_id=r.user_id,
-            reviewer_name=r.user.name if r.user else "Unknown",  # Get user's name
-            spot_id=r.spot_id,
-            rating_score=r.rating_score,
-            review_description=r.review_description,
-            image=r.image,
-            owner_reply=r.owner_reply
+            id=review.id,
+            created_at=review.created_at,
+            user_id=review.user_id,
+            reviewer_name=review.user.name if review.user else "Unknown",  # Get user's name
+            spot_id=review.spot_id,
+            rating_score=review.rating_score,
+            review_description=review.review_description,
+            images=review.images,
+            owner_reply=review.owner_reply
         )
-        for r in reviews
+        for review in reviews
     ]
 
 
