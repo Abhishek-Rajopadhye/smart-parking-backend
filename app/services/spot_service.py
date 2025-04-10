@@ -50,3 +50,23 @@ def add_spot(spot: AddSpot, db: Session):
         print(e)
         raise HTTPException(
             status_code=400, detail="Error occur during adding spot.")
+
+def get_spot_list_of_owner(user_id: int, db: Session):
+    """
+    Retrieve all spots owned by a specific user.
+
+    Parameters:
+        user_id (int): User ID
+        db (Session): SQLAlchemy database session
+
+    Returns:
+        List[dict]: List of spots for the specified user
+    """
+    try:
+        spots = db.query(Spot).filter(Spot.owner_id == str(user_id)).all()
+        if not spots:
+            raise HTTPException(status_code=404, detail="No spots found for this owner.")
+        return [{"spot_id": spot.spot_id, "address": spot.address} for spot in spots]
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=400, detail="Error occur during fetching spots.")
