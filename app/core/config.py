@@ -6,8 +6,7 @@ from pydantic_settings import BaseSettings
 from functools import lru_cache
 
 load_dotenv()
-
-
+ 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Smart Parking"
     API_V1_STR: str = "/api/v1"
@@ -48,11 +47,11 @@ class Settings(BaseSettings):
     # CORS Settings
     BACKEND_CORS_ORIGINS: list[str] = [
         BACKEND_URL, FRONTEND_URL]  # Allowed frontend origins
+ 
 
     # Payment Gateway (example)
     RAZORPAY_KEY_ID: str = os.getenv("RAZORPAY_KEY_ID")
     RAZORPAY_KEY_SECRET: str = os.getenv("RAZORPAY_KEY_SECRET")
-
 
 @lru_cache()
 def get_settings():

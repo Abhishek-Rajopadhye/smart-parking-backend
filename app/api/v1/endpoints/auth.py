@@ -1,3 +1,5 @@
+# app/api/v1/endpoints/auth.py
+ 
 from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlalchemy.orm import Session
 from starlette.responses import RedirectResponse
@@ -63,7 +65,7 @@ async def callback(provider: str, request: Request, db: Session = Depends(get_db
     """
     code = request.query_params.get("code")
     config = settings.model_dump()
-
+ 
     if not code:
         raise HTTPException(
             status_code=401, detail="Authorization code not provided")
@@ -91,10 +93,11 @@ async def callback(provider: str, request: Request, db: Session = Depends(get_db
  
         # Save user in the database
         user = create_oauth_user(db, user_data)
-        return RedirectResponse(f"{config['FRONTEND_URL']}/auth?token={access_token}&user_id={user_data['provider_id']}")
-
+        return RedirectResponse(f"{config["FRONTEND_URL"]}/auth?token={access_token}&user_id={user_data['provider_id']}")
+ 
     except HTTPException as http_error:
         raise http_error
     except Exception as general_error:
         raise HTTPException(
             status_code=500, detail=f"Internal server error: {str(general_error)}")
+ 
