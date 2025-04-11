@@ -2,6 +2,7 @@ from app.schemas.spot import AddSpot
 from sqlalchemy.orm import Session
 from app.db.spot_model import Spot
 from fastapi import HTTPException
+from sqlalchemy.sql import text
 import base64
 
 
@@ -63,10 +64,39 @@ def get_spot_list_of_owner(user_id: int, db: Session):
         List[dict]: List of spots for the specified user
     """
     try:
+        print("starting to fetch spots")
         spots = db.query(Spot).filter(Spot.owner_id == str(user_id)).all()
         if not spots:
             raise HTTPException(status_code=404, detail="No spots found for this owner.")
-        return [{"spot_id": spot.spot_id, "address": spot.address} for spot in spots]
+        query = text("select * from spots where owner_id = :user_id")
+        result = db.execute(query, {"user_id": str(user_id)}).fetchall()
+        spot_list = []
+        print("before adding spots")
+        
+        for row in result:
+            s = ""
+            s += ", ".join(str(item) for item in row[12])
+            # print(row[12])
+            # print(s)
+            total_earning = db.execute(
+                text("select SUM(amount) from payments where spot_id = :spot_id"), 
+                {"spot_id": row[0]}).fetchone()
+            total_earning = 0 if total_earning[0] == None else total_earning[0] 
+            spot_list.append({
+                "id": row[0],
+                "title": row[2],
+                "description": row[11],
+                "totalEarning": total_earning,
+                "address": row[3],
+                "openTime": row[9],
+                "closeTime": row[10],
+                "hourlyRate": row[6],
+                "totalSlots": row[7],
+                "openDays":  s
+            })
+            # print(spot_list[0]["openDays"])
+        # print(spot_list[0])
+        return spot_list
     except Exception as e:
         print(e)
         raise HTTPException(status_code=400, detail="Error occur during fetching spots.")

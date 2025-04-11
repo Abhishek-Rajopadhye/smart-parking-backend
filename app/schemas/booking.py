@@ -9,3 +9,8 @@ class BookingCreate(BaseModel):
     end_date_time: str
     total_amount: int
     receipt: str
+
+class BookingUpdate(BaseModel):
+    spot_id: int
+    total_slots: int
+
