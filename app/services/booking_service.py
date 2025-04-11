@@ -180,7 +180,7 @@ async def create_booking(db: Session, booking_data):
         #     db.rollback()
         #     raise HTTPException(
         #         status_code=402, detail="Payment verification failed.")
-
+        print("after payment commit")
         return {
             "order_id": razorpay_order["id"],
             "amount": razorpay_order["amount"],
@@ -211,6 +211,7 @@ async def update_booking(db: Session, payment_data: Payment):
     Update the payment status, create booking, and update spot availability.
     """
     try:
+        print("Hi..")
         print("This is in update booking service model")
 
         # Start a transaction block
@@ -589,6 +590,31 @@ async def check_out_booking(db: Session, booking_id):
         })
         db.commit()
         return booking
+    except Exception as db_error:
+        raise HTTPException(
+            status_code=500, detail=f"Database error: {str(db_error)}")
+    
+async def update_available_slots(db: Session, booking_data):
+    """
+    Update the booking slots for a specific booking.
+
+    Parameters:
+        db (Session): SQLAlchemy database session
+        booking_data (BookingUpdate): Booking data
+
+    Returns:
+        dict: Updated booking details
+
+    Example:
+        update_booking(db, booking_data)
+        update the booking with the given booking data
+        return updated booking details else raise an exception
+    """
+    try:
+        spot = db.query(Spot).filter(Spot.spot_id == booking_data.spot_id).with_for_update().one_or_none()
+        spot.available_slots += booking_data.total_slots
+        db.commit()
+        return {"message": "Booking updated successfully"}
     except Exception as db_error:
         raise HTTPException(
             status_code=500, detail=f"Database error: {str(db_error)}")
