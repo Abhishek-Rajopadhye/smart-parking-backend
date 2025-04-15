@@ -8,6 +8,7 @@ from app.db.spot_model import Spot
 from fastapi import HTTPException
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
+from datetime import datetime
 
 # Load Razorpay keys
 RAZORPAY_KEY_ID = settings.RAZORPAY_KEY_ID
@@ -619,6 +620,42 @@ async def update_available_slots(db: Session, booking_data):
         spot.available_slots += booking_data.total_slots
         db.commit()
         return {"message": "Booking updated successfully"}
+    except Exception as db_error:
+        raise HTTPException(
+            status_code=500, detail=f"Database error: {str(db_error)}")
+
+async def refresh_bookings(user_id, db:Session):
+    """
+    Refreshes the bookings for a given user by updating their statuses and resetting the available slots for the associated parking spots.
+    
+    Parameters:
+        user_id (int): The ID of the user whose bookings need to be refreshed.
+        db (Session): The database session used to query and update the database.
+
+    Raises:
+        HTTPException (500): If a database error occurs during the operation.
+
+    Returns:
+        dict: A dictionary containing a success message if the operation completes successfully.
+    """
+    
+    try:
+        # Fetch all bookings for the user
+        bookings = db.query(Booking).filter(Booking.user_id == user_id).all()
+
+        for booking in bookings:
+            # Check if the booking end time has passed and status is not "Checked In"
+            if booking.end_date_time < datetime.now() and booking.status != "Checked In":
+                # Update booking status to "Missed Booking"
+                booking.status = "Missed Booking"
+
+            # Reset the available slots for the spot
+            spot = db.query(Spot).filter(Spot.spot_id == booking.spot_id).with_for_update().one_or_none()
+            if spot:
+                spot.available_slots += booking.total_slots
+
+        db.commit()
+        return {"message": "Bookings refreshed successfully"}
     except Exception as db_error:
         raise HTTPException(
             status_code=500, detail=f"Database error: {str(db_error)}")
