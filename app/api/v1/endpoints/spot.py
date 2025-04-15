@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session  # interact with database
 from app.db.session import get_db
-from app.services.spot_service import add_spot, get_spot_list_of_owner
+from app.services.spot_service import add_spot, get_spot_list_of_owner, update_spot_details, delete_spot
 from app.schemas.spot import AddSpot
 
 router = APIRouter()
@@ -49,3 +49,32 @@ def get_spots_of_owner(user_id: int, db: Session = Depends(get_db)):
         List[dict]: List of spots for the specified user
     """
     return get_spot_list_of_owner(user_id, db)
+
+@router.put("/{spot_id}")
+def update_spot(spot_id: int, updated_spot:dict, db:Session = Depends(get_db)):
+    """
+    Update the details of a parking spot.
+
+    Args:
+        spot_id (int): The unique identifier of the parking spot to be updated.
+        updated_spot (dict): A dictionary containing the updated details of the parking spot.
+        db (Session): The database session dependency.
+
+    Returns:
+        dict: The updated parking spot details after applying the changes.
+    """
+    return update_spot_details(updated_spot, spot_id, db)
+
+@router.delete("/{spot_id}")
+def delete_selected_spot(spot_id: int, db:Session = Depends(get_db)):
+    """
+    Deletes a parking spot with the specified ID.
+
+    Args:
+        spot_id (int): The ID of the parking spot to be deleted.
+        db (Session, optional): The database session dependency. Defaults to the result of `Depends(get_db)`.
+
+    Returns:
+        None: The result of the `delete_spot` function, which handles the deletion logic.
+    """
+    return delete_spot(spot_id, db)

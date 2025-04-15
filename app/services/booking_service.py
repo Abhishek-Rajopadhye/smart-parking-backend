@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.db.booking_model import Booking
 from app.db.payment_model import Payment
+from app.db.oauth_model import OAuthUser
 from app.db.spot_model import Spot
 from fastapi import HTTPException
 from sqlalchemy import text
@@ -415,6 +416,7 @@ async def get_booking_by_spot(db: Session, spot_id: int):
         bookings = (
             db.query(
                 Booking,
+                OAuthUser.name.label("user_name"),
                 Spot.spot_title,
                 Spot.address.label("spot_address"),
                 Payment.amount,
@@ -422,6 +424,7 @@ async def get_booking_by_spot(db: Session, spot_id: int):
             )
             .join(Spot, Booking.spot_id == Spot.spot_id)
             .join(Payment, Booking.payment_id == Payment.id)
+            .join(Booking.user_id == OAuthUser.provider_id)
             .filter(Booking.spot_id == spot_id)
             .all()
         )
@@ -430,6 +433,7 @@ async def get_booking_by_spot(db: Session, spot_id: int):
             {
                 "id": booking.Booking.id,
                 "user_id": booking.Booking.user_id,
+                "user_name": booking.user_name,
                 "spot_id": booking.Booking.spot_id,
                 "spot_title": booking.spot_title,
                 "spot_address": booking.spot_address,
