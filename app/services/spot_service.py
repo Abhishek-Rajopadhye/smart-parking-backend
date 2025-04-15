@@ -1,4 +1,4 @@
-from app.schemas.spot import AddSpot
+from app.schemas.spot import AddSpot, EditSpot
 from sqlalchemy.orm import Session
 from app.db.spot_model import Spot
 from fastapi import HTTPException
@@ -105,7 +105,7 @@ def get_spot_list_of_owner(user_id: int, db: Session):
             status_code=400, detail="Error occur during fetching spots.")
 
 
-async def update_spot_details(updated_spot, spot_id:int, db: Session):
+async def update_spot_details(updated_spot: EditSpot, spot_id: int, db: Session):
     """
     Updates a spot with the given updated details.
 
@@ -129,18 +129,21 @@ async def update_spot_details(updated_spot, spot_id:int, db: Session):
         if (spot.available_slots > updated_spot.total_slots):
             raise HTTPException(
                 status_code=400, detail="Slots are in use. Please try again when slots are empty.")
-        db.query(Spot).filter(Spot.spot_id == updated_spot.spot_id).update(
-            {
-                "spot_title": updated_spot.spot_title,
-                "address": updated_spot.address,
-                "hourly_rate": updated_spot.hourly_rate,
-                "no_of_slots": updated_spot.no_of_slots,
-                "open_time": updated_spot.open_time,
-                "close_time": updated_spot.close_time,
-                "description": updated_spot.description,
-                "available_days": updated_spot.available_days,
-                "image": updated_spot.image
+        db.query(Spot).filter(Spot.spot_id == spot_id).update({
+            "spot_title": updated_spot.spot_title,
+            "address": updated_spot.spot_address,
+            "hourly_rate": updated_spot.hourly_rate,
+            "no_of_slots": updated_spot.total_slots,
+            "open_time": updated_spot.open_time,
+            "close_time": updated_spot.close_time,
+            "description": updated_spot.spot_description,
+            "available_days": updated_spot.available_days,
+        })
+        if (updated_spot.image != []):
+            db.query(Spot).filter(Spot.spot_id == spot_id).update({
+                "image": updated_spot.image == []
             })
+
         db.commit()
         return updated_spot
     except Exception as db_error:

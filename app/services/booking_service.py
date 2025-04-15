@@ -424,7 +424,7 @@ async def get_booking_by_spot(db: Session, spot_id: int):
             )
             .join(Spot, Booking.spot_id == Spot.spot_id)
             .join(Payment, Booking.payment_id == Payment.id)
-            .join(Booking.user_id == OAuthUser.provider_id)
+            .join(OAuthUser, Booking.user_id == OAuthUser.provider_id)  # Corrected join
             .filter(Booking.spot_id == spot_id)
             .all()
         )
