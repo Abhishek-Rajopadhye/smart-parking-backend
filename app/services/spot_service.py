@@ -78,8 +78,6 @@ def get_spot_list_of_owner(user_id: int, db: Session):
         for row in result:
             s = ""
             s += ", ".join(str(item) for item in row[12])
-            # print(row[12])
-            # print(s)
             total_earning = db.execute(
                 text("select SUM(amount) from payments where spot_id = :spot_id"),
                 {"spot_id": row[0]}).fetchone()
@@ -96,8 +94,6 @@ def get_spot_list_of_owner(user_id: int, db: Session):
                 "totalSlots": row[7],
                 "openDays":  s
             })
-            # print(spot_list[0]["openDays"])
-        # print(spot_list[0])
         return spot_list
     except Exception as e:
         print(e)

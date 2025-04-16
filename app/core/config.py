@@ -46,12 +46,15 @@ class Settings(BaseSettings):
  
     # CORS Settings
     BACKEND_CORS_ORIGINS: list[str] = [
-        BACKEND_URL, FRONTEND_URL]  # Allowed frontend origins
+    BACKEND_URL, FRONTEND_URL]  # Allowed frontend origins
  
 
     # Payment Gateway (example)
     RAZORPAY_KEY_ID: str = os.getenv("RAZORPAY_KEY_ID")
     RAZORPAY_KEY_SECRET: str = os.getenv("RAZORPAY_KEY_SECRET")
+
+    EMAIL_ADDRESS: str = os.getenv("EMAIL_ADDRESS")
+    EMAIL_PASSWORD:str = os.getenv("EMAIL_PASSWORD")
 
 @lru_cache()
 def get_settings():

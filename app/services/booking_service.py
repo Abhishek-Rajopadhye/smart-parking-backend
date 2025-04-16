@@ -99,24 +99,21 @@ async def create_booking(db: Session, booking_data):
     first check if the required number of slots are available for booking.
     then create a Razorpay order for the payment.
     store the payment info in the database.
-    simulate payment verification and store the booking details in the database.
-    Add the booking details to the database.
-
+   
     Parameters:
         db (Session): SQLAlchemy database session
         booking_data (BookingCreate): Booking data
 
     Returns:
-        dict: Booking details
+        dict: Order details
 
     Example:
         create_booking(db, booking_data)
-        create a new booking with the given booking data
-        return booking details else raise an exception
+        create a new payment with the given booking data
+        return order details else raise an exception
     """
     try:
-        print("This is in service model")
-
+        
         db.begin()
 
         slot = db.execute(text(
@@ -155,34 +152,12 @@ async def create_booking(db: Session, booking_data):
         db.add(new_payment)
         db.commit()
         db.refresh(new_payment)
-
-        # Simulating a successful payment (should be dynamic)
-        # payment_status = "success"
-
-        # if payment_status == "success":
-        #     new_payment.status = "success"
-        #     new_booking = Booking(
-        #     user_id=booking_data.user_id,
-        #     spot_id=booking_data.spot_id,
-        #     total_slots=booking_data.total_slots,
-        #     start_date_time=booking_data.start_date_time,
-        #     end_date_time=booking_data.end_date_time,
-        #     payment_id=new_payment.id
-        # )
-        #     db.add(new_booking)
         db.execute(text(
         "UPDATE spots SET available_slots = available_slots - :total_slots WHERE spot_id = :spot_id"),
         {"spot_id": booking_data.spot_id,
         "total_slots": booking_data.total_slots}
         )
         db.commit()  # Update payment status
-        # else:
-        #     new_payment.status = "failed"
-        #     db.commit()
-        #     db.rollback()
-        #     raise HTTPException(
-        #         status_code=402, detail="Payment verification failed.")
-        print("after payment commit")
         return {
             "order_id": razorpay_order["id"],
             "amount": razorpay_order["amount"],
@@ -211,11 +186,24 @@ async def create_booking(db: Session, booking_data):
 async def update_booking(db: Session, payment_data: Payment):
     """
     Update the payment status, create booking, and update spot availability.
+    also handling a concurrency issue by locking the payment and spot rows.
+    if the payment is successful, create a booking and update the spot availability.
+    else exception is raised and the spot availability is restored.
+
+    Parameters:
+        db (Session): SQLAlchemy database session
+        payment_data (Payment): Payment data
+
+    Returns:
+        dict: Payment status and Razorpay details
+    
+    Example:
+        update_booking(db, payment_data)
+        update the payment status and create a booking
+        return payment status and Razorpay details else raise an exception
     """
     try:
-        print("Hi..")
-        print("This is in update booking service model")
-
+       
         # Start a transaction block
         payment = db.query(Payment).filter(Payment.id == payment_data.payment_id).with_for_update().one_or_none()
 
@@ -229,20 +217,14 @@ async def update_booking(db: Session, payment_data: Payment):
         db.commit()
         db.refresh(payment)
 
-        print("Payment updated successfully")
-
         # Create booking only if payment is successful
         if payment.status == "success":
-            print("Creating booking")
-
+           
             # Lock the Spot row to prevent race condition
             spot = db.query(Spot).filter(Spot.spot_id == payment.spot_id).with_for_update().one_or_none()
 
             if not spot:
                 raise HTTPException(status_code=404, detail="Spot not found.")
-
-            # if spot.available_slots < payment_data.total_slots:
-                # raise HTTPException(status_code=400, detail="Not enough slots available.")
 
             booking = Booking(
                 user_id=payment.user_id,
@@ -255,9 +237,7 @@ async def update_booking(db: Session, payment_data: Payment):
             )
 
             db.add(booking)
-            # Update the available slots atomically
-            #spot.available_slots -= booking.total_slots
-
+           
             db.commit()
             db.refresh(booking)
 
@@ -280,11 +260,6 @@ async def update_booking(db: Session, payment_data: Payment):
     finally:
         try:
             if not (payment and payment.status == "success"):
-                # db.execute(text(
-                #     "UPDATE spots SET available_slots = available_slots + :total_slots WHERE spot_id = :spot_id"),
-                #     {"spot_id": payment_data.spot_id,
-                #     "total_slots": payment_data.total_slots}
-                # )
                 spot.available_slots += payment_data.total_slots
                 db.commit()
         except Exception as e:
