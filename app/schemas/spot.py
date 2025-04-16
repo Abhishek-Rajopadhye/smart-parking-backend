@@ -16,3 +16,14 @@ class AddSpot(BaseModel):
     spot_description: Optional[str] = None
     available_days: list[str] = None
     image: Optional[list[str]] = None
+
+class EditSpot(BaseModel):
+    spot_address: str
+    spot_title: str
+    total_slots: int
+    hourly_rate: int
+    open_time: str
+    close_time: str
+    spot_description: Optional[str] = None
+    available_days: list[str] = None
+    image: Optional[list[str]] = None

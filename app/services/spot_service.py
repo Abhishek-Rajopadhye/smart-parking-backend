@@ -1,4 +1,4 @@
-from app.schemas.spot import AddSpot
+from app.schemas.spot import AddSpot, EditSpot
 from sqlalchemy.orm import Session
 from app.db.spot_model import Spot
 from fastapi import HTTPException
@@ -52,6 +52,7 @@ def add_spot(spot: AddSpot, db: Session):
         raise HTTPException(
             status_code=400, detail="Error occur during adding spot.")
 
+
 def get_spot_list_of_owner(user_id: int, db: Session):
     """
     Retrieve all spots owned by a specific user.
@@ -67,19 +68,20 @@ def get_spot_list_of_owner(user_id: int, db: Session):
         print("starting to fetch spots")
         spots = db.query(Spot).filter(Spot.owner_id == str(user_id)).all()
         if not spots:
-            raise HTTPException(status_code=404, detail="No spots found for this owner.")
+            raise HTTPException(
+                status_code=404, detail="No spots found for this owner.")
         query = text("select * from spots where owner_id = :user_id")
         result = db.execute(query, {"user_id": str(user_id)}).fetchall()
         spot_list = []
         print("before adding spots")
-        
+
         for row in result:
             s = ""
             s += ", ".join(str(item) for item in row[12])
             total_earning = db.execute(
-                text("select SUM(amount) from payments where spot_id = :spot_id"), 
+                text("select SUM(amount) from payments where spot_id = :spot_id"),
                 {"spot_id": row[0]}).fetchone()
-            total_earning = 0 if total_earning[0] == None else total_earning[0] 
+            total_earning = 0 if total_earning[0] == None else total_earning[0]
             spot_list.append({
                 "id": row[0],
                 "title": row[2],
@@ -95,4 +97,80 @@ def get_spot_list_of_owner(user_id: int, db: Session):
         return spot_list
     except Exception as e:
         print(e)
-        raise HTTPException(status_code=400, detail="Error occur during fetching spots.")
+        raise HTTPException(
+            status_code=400, detail="Error occur during fetching spots.")
+
+
+async def update_spot_details(updated_spot: EditSpot, spot_id: int, db: Session):
+    """
+    Updates a spot with the given updated details.
+
+    Parameters:
+        updated_spot (dict): The dictionary containing the updated details of the spot
+        db (Session): SQLAlchemy database session
+
+    Raises:
+        HTTPException (400): If there is less total_slots in updated spot, than current available_slots
+        HTTPException (404): If the spot to update is not found
+        HTTPException (500): If there is any issue updating the spot details
+
+    Returns:
+        dict: The updated spot
+    """
+    try:
+        spot = db.query(Spot).filter(
+            Spot.spot_id == spot_id).one()
+        if (not spot or spot == None):
+            raise HTTPException(status_code=404, detail="Spot not found")
+        if (spot.available_slots > updated_spot.total_slots):
+            raise HTTPException(
+                status_code=400, detail="Slots are in use. Please try again when slots are empty.")
+        db.query(Spot).filter(Spot.spot_id == spot_id).update({
+            "spot_title": updated_spot.spot_title,
+            "address": updated_spot.spot_address,
+            "hourly_rate": updated_spot.hourly_rate,
+            "no_of_slots": updated_spot.total_slots,
+            "open_time": updated_spot.open_time,
+            "close_time": updated_spot.close_time,
+            "description": updated_spot.spot_description,
+            "available_days": updated_spot.available_days,
+        })
+        if (updated_spot.image != []):
+            db.query(Spot).filter(Spot.spot_id == spot_id).update({
+                "image": updated_spot.image == []
+            })
+
+        db.commit()
+        return updated_spot
+    except Exception as db_error:
+        raise HTTPException(
+            status_code=500, detail="Database Error" + str(db_error))
+
+
+async def delete_spot(spot_id: int, db: Session):
+    """
+    Deletes a parking spot from the database.
+
+    Parameters:
+        spot_id (int): The unique identifier of the parking spot to be deleted.
+        db (Session): The database session used to interact with the database.
+
+    Raises:
+        HTTPException (404): If the parking spot is not found (status code 404).
+        HTTPException (400): If the parking spot is not empty (status code 400).
+        HTTPException (500): If there is an error during the deletion process (status code 500).
+
+    Returns:
+        None
+    """
+    try:
+        spot = db.query(Spot).filter(Spot.spot_id == spot_id).one()
+        if (not spot or spot == None):
+            raise HTTPException(status_code=404, detail="Spot not found.")
+        if (spot.available_slots > 0):
+            raise HTTPException(status_code=400, detail="Spot not empty.")
+        db.query(Spot).filter(Spot.spot_id == spot_id).delete()
+        db.commit()
+    except Exception as db_error:
+        raise HTTPException(
+            status_code=500, detail="Error deleting spot: " + str(db_error))
