@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.db.session import get_db
-from app.services.booking_service import create_booking, get_bookings, get_booking_by_user, update_booking, get_booking_by_spot, get_bookings_of_spots_of_owner, cancel_booking, check_in_booking, check_out_booking, update_available_slots
+from app.services.booking_service import create_booking, get_bookings, get_booking_by_user, update_booking, get_booking_by_spot, get_bookings_of_spots_of_owner, cancel_booking, check_in_booking, check_out_booking, update_available_slots, refresh_bookings
 from app.schemas.booking import BookingCreate, BookingUpdate
 from app.schemas.payment import Payment
 
@@ -180,6 +180,16 @@ async def check_out_spot_booking(booking_id: str, db: Session = Depends(get_db))
 async def update_booking_slots(booking_data: BookingUpdate, db: Session = Depends(get_db)):
     try:
         response = await update_available_slots(db, booking_data)
+        return response
+    except Exception as exception:
+        
+        raise HTTPException(status_code=500, detail="Failed to update the booking slots")
+
+    
+@router.put("/user/{user_id}")
+async def update_booking_slots(user_id: str, db: Session = Depends(get_db)):
+    try:
+        response = await refresh_bookings(user_id, db)
         return response
     except Exception as exception:
         
