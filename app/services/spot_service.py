@@ -1,6 +1,7 @@
 from app.schemas.spot import AddSpot, EditSpot
 from sqlalchemy.orm import Session
 from app.db.spot_model import Spot
+from app.db.review_model import Review
 from fastapi import HTTPException
 from sqlalchemy.sql import text
 import base64
@@ -167,10 +168,14 @@ async def delete_spot(spot_id: int, db: Session):
         spot = db.query(Spot).filter(Spot.spot_id == spot_id).one()
         if (not spot or spot == None):
             raise HTTPException(status_code=404, detail="Spot not found.")
-        if (spot.available_slots > 0):
+        if (spot.available_slots < spot.no_of_slots):
             raise HTTPException(status_code=400, detail="Spot not empty.")
+        db.query(Review).filter(Review.spot_id == spot_id).delete()
         db.query(Spot).filter(Spot.spot_id == spot_id).delete()
         db.commit()
+        return "Success"
     except Exception as db_error:
+        db.rollback()
+        db.commit()
         raise HTTPException(
             status_code=500, detail="Error deleting spot: " + str(db_error))

@@ -68,7 +68,7 @@ async def update_spot(spot_id: int, updated_spot: EditSpot, db: Session = Depend
 
 
 @router.delete("/{spot_id}")
-def delete_selected_spot(spot_id: int, db: Session = Depends(get_db)):
+async def delete_selected_spot(spot_id: int, db: Session = Depends(get_db)):
     """
     Deletes a parking spot with the specified ID.
 
@@ -79,4 +79,4 @@ def delete_selected_spot(spot_id: int, db: Session = Depends(get_db)):
     Returns:
         None: The result of the `delete_spot` function, which handles the deletion logic.
     """
-    return delete_spot(spot_id, db)
+    return await delete_spot(spot_id, db)
