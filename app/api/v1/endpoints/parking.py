@@ -51,26 +51,26 @@ async def fetch_parking_spots(db: Session = Depends(get_db)):
         spots = get_all_parking_spots(db)
         out: List[dict] = []
 
-        for s in spots:
+        for spot in spots:
             # Manually assemble a dict matching your Pydantic schema:
             spot_dict = {
-                "spot_id":         s.spot_id,
-                "address":         s.address,
-                "owner_id":        s.owner_id,
-                "spot_title":      s.spot_title,
-                "latitude":        s.latitude,
-                "longitude":       s.longitude,
-                "available_slots": s.available_slots,
-                "no_of_slots":     s.no_of_slots,
-                "hourly_rate":     s.hourly_rate,
-                "open_time":       s.open_time,
-                "close_time":      s.close_time,
-                "description":     s.description,
-                "available_days":  s.available_days,
+                "spot_id":         spot.spot_id,
+                "address":         spot.address,
+                "owner_id":        spot.owner_id,
+                "spot_title":      spot.spot_title,
+                "latitude":        spot.latitude,
+                "longitude":       spot.longitude,
+                "available_slots": spot.available_slots,
+                "no_of_slots":     spot.no_of_slots,
+                "hourly_rate":     spot.hourly_rate,
+                "open_time":       spot.open_time,
+                "close_time":      spot.close_time,
+                "description":     spot.description,
+                "available_days":  spot.available_days,
                 # **Convert each bytes blob to a base64 string:**
                 "image": [
                     base64.b64encode(blob).decode("utf-8")
-                    for blob in (s.image or [])
+                    for blob in (spot.image or [])
                 ],
             }
             out.append(spot_dict)
