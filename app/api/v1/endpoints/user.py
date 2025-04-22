@@ -2,17 +2,20 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy.sql import func
-from app.db.payment_model import Payment
-from app.db.booking_model import Booking
-from app.db.spot_model import Spot
+from app.services.user_service import get_profile_data, update_profile_details, get_profile_unauth
 from app.db.session import get_db
-from app.db.oauth_model import OAuthUser
 from app.schemas.user import UserProfile, UserUpdate, OwnerProfile
 from app.core.oauth import oauth2_scheme
-from app.services.auth_service import verify_oauth_token
 
 router = APIRouter()
+
+
+class AuthenticationError(Exception):
+    """Raised when invalid token or unauthorized access."""
+
+    def __init__(self, message="Unauthorized Access."):
+        self.message = message
+        super().__init__(self.message)
 
 
 @router.get("/profile/{user_id}", response_model=UserProfile)
@@ -35,34 +38,9 @@ async def get_profile(user_id: str, token: str = Depends(oauth2_scheme), db: Ses
             500: Any other error occurs during the process
     """
     try:
-        user = db.query(OAuthUser).filter(
-            OAuthUser.provider_id == user_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-
-        # payload = verify_oauth_token(token, provider=user.provider)
-        # if not payload:
-        #     raise HTTPException(status_code=401, detail="Invalid token")
-
-        # Calculate total earnings
-        total_earnings = (
-            db.query(func.sum(Payment.amount))
-            .join(Booking, Payment.id == Booking.payment_id)
-            .join(Spot, Booking.spot_id == Spot.spot_id)
-            .filter(Spot.owner_id == user_id)
-            .scalar()
-        ) or 0  # Default to 0 if no earnings
-
-        return UserProfile(
-            id=user.provider_id,
-            name=user.name,
-            email=user.email,
-            phone=user.phone,
-            total_earnings=total_earnings,
-            profile_picture=user.profile_picture
-        )
-    except HTTPException as http_error:
-        raise http_error
+        return await get_profile_data(user_id, token, db)
+    except KeyError as notfound_error:
+        raise HTTPException(status_code=404, detail=notfound_error)
     except ValueError as value_error:
         raise HTTPException(
             status_code=500, detail=f"Value error: {str(value_error)}")
@@ -95,37 +73,11 @@ async def update_profile(user_id: str, user_update: UserUpdate, token: str = Dep
             500: Any other error occurs during the process
     """
     try:
-        user = db.query(OAuthUser).filter(
-            OAuthUser.provider_id == user_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-
-        payload = verify_oauth_token(token, provider=user.provider)
-        if not payload:
-            raise HTTPException(status_code=401, detail="Invalid token")
-
-        if user_update.name is not None:
-            user.name = user_update.name
-        if user_update.email is not None:
-            user.email = user_update.email
-        if user_update.phone is not None:
-            user.phone = user_update.phone
-        if user_update.profile_picture is not None:
-            user.profile_picture = user_update.profile_picture
-
-        db.commit()
-        db.refresh(user)
-
-        return UserProfile(
-            id=user.provider_id,
-            name=user.name,
-            email=user.email,
-            phone=user.phone,
-            profile_picture=user.profile_picture,
-            total_earnings=user_update.total_earnings
-        )
-    except HTTPException as http_error:
-        raise http_error
+        return await update_profile_details(user_id, user_update, token, db)
+    except KeyError as keyError:
+        raise HTTPException(status_code=404, detail=str(keyError))
+    except AuthenticationError as unauthorized:
+        raise HTTPException(status_code=401, detail=str(unauthorized))
     except ValueError as value_error:
         raise HTTPException(
             status_code=500, detail=f"Value error: {str(value_error)}")
@@ -154,20 +106,9 @@ async def get_profile(user_id: str, db: Session = Depends(get_db)):
             404: If the user is not found
     """
     try:
-        user = db.query(OAuthUser).filter(
-            OAuthUser.provider_id == user_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-
-        return OwnerProfile(
-            id=user.provider_id,
-            name=user.name,
-            email=user.email,
-            phone=user.phone,
-            profile_picture=user.profile_picture
-        )
-    except HTTPException as http_error:
-        raise http_error
+        return await get_profile_unauth(user_id, db)
+    except KeyError as not_found_error:
+        raise HTTPException(status_code=404, detail=str(not_found_error))
     except Exception as general_error:
         raise HTTPException(
             status_code=500, detail=f"Internal server error: {str(general_error)}")

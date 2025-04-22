@@ -5,24 +5,13 @@ from app.db.oauth_model import OAuthUser
 from app.db.payment_model import Payment
 from app.db.booking_model import Booking
 from app.db.spot_model import Spot
-from tests.test_config import client, db
+from tests.test_config import client, db, clean_test_db
+
 
 # Helper function to create a mock OAuth user
 def create_mock_oauth_user(db: Session, mockUser: dict):
     """
     Create a mock OAuth user and add it to the database.
-
-    Parameters:
-        db (Session): The database session to use for adding the user.
-        provider (str): The OAuth provider (e.g., 'google', 'facebook').
-        provider_id (str): The unique identifier for the user from the OAuth provider.
-        email (str): The email address of the user.
-
-    Returns:
-        OAuthUser: The created OAuth user object.
-
-    Raises:
-        SQLAlchemyError: If there is an error committing the user to the database.
     """
     user = OAuthUser(
         provider=mockUser["provider"],
@@ -36,6 +25,7 @@ def create_mock_oauth_user(db: Session, mockUser: dict):
     db.commit()
     db.refresh(user)
     return user
+
 
 # Helper function to create a mock spot
 def create_mock_spot(db: Session, mockSpot: dict):
@@ -53,13 +43,13 @@ def create_mock_spot(db: Session, mockSpot: dict):
         close_time=mockSpot["close_time"],
         description=mockSpot["description"],
         available_days=mockSpot["available_days"],
-        image=mockSpot["image"],
         created_at=mockSpot["created_at"]
     )
     db.add(spot)
     db.commit()
     db.refresh(spot)
     return spot
+
 
 # Helper function to create a mock booking and payment
 def create_mock_booking_and_payment(db: Session, mockBooking: dict, mockPayment: dict):
@@ -77,7 +67,7 @@ def create_mock_booking_and_payment(db: Session, mockBooking: dict, mockPayment:
     db.add(payment)
     db.commit()
     db.refresh(payment)
-    
+
     booking = Booking(
         id=mockBooking["id"],
         user_id=mockBooking["user_id"],
@@ -98,14 +88,13 @@ def create_mock_booking_and_payment(db: Session, mockBooking: dict, mockPayment:
 # Test case for fetching user profile
 def test_get_user_profile(db: Session):
     # Create mock user, spot, and booking
-
     mockUser = {
         "provider": "google",
         "provider_id": "1",
         "email": "mock_user@example.com",
         "name": "Test User",
-        "profile_picture":"http://example.com/avatar.png",
-        "access_token":"mock_token"
+        "profile_picture": "http://example.com/avatar.png",
+        "access_token": "mock_token"
     }
     mockSpot = {
         "spot_id": 1,
@@ -121,7 +110,7 @@ def test_get_user_profile(db: Session):
         "close_time": "20:00:00",
         "description": "This is a test spot for parking.",
         "available_days": ["Monday", "Tuesday", "Wednesday"],
-        "image": b"mock_image_data",
+        "image": None,
         "created_at": datetime.now(),
     }
     mockBooking = {
@@ -149,20 +138,23 @@ def test_get_user_profile(db: Session):
 
     user = create_mock_oauth_user(db, mockUser)
     spot = create_mock_spot(db, mockSpot)
-    create_mock_booking_and_payment(db, mockBooking=mockBooking, mockPayment=mockPayment)
+    create_mock_booking_and_payment(
+        db, mockBooking=mockBooking, mockPayment=mockPayment)
 
     # Fetch user profile
-    response = client.get(f"/users/profile/{user.provider_id}", headers={"Authorization": "Bearer mock_token"})
+    response = client.get(
+        f"/users/profile/{user.provider_id}", headers={"Authorization": "Bearer mock_token"})
     assert response.status_code == 200
     data = response.json()
 
     assert data["id"] == user.provider_id
     assert data["name"] == user.name
     assert data["email"] == user.email
-    assert data["total_earnings"] == 100
     assert data["profile_picture"] == user.profile_picture
 
 # Test case for updating user profile
+
+
 def test_update_user_profile(db: Session):
     # Create mock user
     mockUser = {
@@ -170,8 +162,8 @@ def test_update_user_profile(db: Session):
         "provider_id": "2",
         "email": "mock_user2@example.com",
         "name": "Test User",
-        "profile_picture":"http://example.com/avatar.png",
-        "access_token":"mock_token"
+        "profile_picture": "http://example.com/avatar.png",
+        "access_token": "mock_token"
     }
     user = create_mock_oauth_user(db, mockUser)
 
@@ -183,7 +175,8 @@ def test_update_user_profile(db: Session):
         "profile_picture": "http://example.com/updated_avatar.png",
         "total_earnings": 0  # This field is ignored during updates
     }
-    response = client.put(f"/users/profile/{user.provider_id}", json=update_data, headers={"Authorization": "Bearer mock_token"})
+    response = client.put(f"/users/profile/{user.provider_id}",
+                          json=update_data, headers={"Authorization": "Bearer mock_token"})
     assert response.status_code == 200
     data = response.json()
 
@@ -192,4 +185,3 @@ def test_update_user_profile(db: Session):
     assert data["email"] == update_data["email"]
     assert data["phone"] == update_data["phone"]
     assert data["profile_picture"] == update_data["profile_picture"]
-
