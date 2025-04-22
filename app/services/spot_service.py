@@ -1,12 +1,38 @@
 from app.schemas.spot import AddSpot, EditSpot
 from sqlalchemy.orm import Session
-from app.db.spot_model import Spot
+from app.db.spot_model import Spot, Document
 from fastapi import HTTPException
 from sqlalchemy.sql import text
 import base64
 
 
-def add_spot(spot: AddSpot, db: Session):
+async def add_document(spot_id, doc1, doc2, doc3 ,db: Session):
+    try:
+        for idx, file in enumerate([doc1, doc2, doc3], start=1):
+            if file.content_type != "application/pdf":
+                raise HTTPException(status_code=400, detail=f"doc{idx} is not a valid PDF")
+
+            content = await file.read()
+            doc_type = None
+            if idx == 1:
+                doc_tye = "Identity Proof"
+            elif idx == 2:
+                doc_tye = "Ownership Proof"
+            else:
+                doc_tye = "Other Document"
+            document = Document(
+                spot_id=spot_id,
+                document_type=doc_tye,
+                filename=file.filename,
+                content=content,
+            )
+            db.add(document)
+        db.commit()
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=400, detail="Error occur during adding document.")
+
+async def add_spot(spot: AddSpot, db: Session):
     """
     Add a parking spot for the user.
 
@@ -24,6 +50,7 @@ def add_spot(spot: AddSpot, db: Session):
     """
     try:
         #   print(spot)
+        print("Adding spot")
         image_blobs = []
         for image_b64 in (spot.image or []):
             image_data = base64.b64decode(image_b64)
@@ -45,7 +72,6 @@ def add_spot(spot: AddSpot, db: Session):
         )
         db.add(new_spot)
         db.commit()
-        db.refresh(new_spot)
         return {"message": "Spot added successfully.", "spot_id": new_spot.spot_id}
     except Exception as e:
         print(e)
@@ -171,6 +197,7 @@ async def delete_spot(spot_id: int, db: Session):
             raise HTTPException(status_code=400, detail="Spot not empty.")
         db.query(Spot).filter(Spot.spot_id == spot_id).delete()
         db.commit()
+        return "success"
     except Exception as db_error:
         raise HTTPException(
             status_code=500, detail="Error deleting spot: " + str(db_error))
