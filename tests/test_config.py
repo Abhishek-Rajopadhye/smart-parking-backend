@@ -23,12 +23,12 @@ DB_PORT: str = os.getenv("DB_PORT", "5432")
 # Create a test database engine
 TEST_DATABASE_URL: str = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/test"
 engine = create_engine(TEST_DATABASE_URL)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+TestingSessionLocal = sessionmaker(
+    autocommit=False, autoflush=False, bind=engine)
 
 # Create the test database tables
 Base.metadata.create_all(bind=engine)
 
-# Dependency override for testing
 def override_get_db():
     db = TestingSessionLocal()
     try:
@@ -36,28 +36,36 @@ def override_get_db():
     finally:
         db.close()
 
-app.dependency_overrides[get_db] = override_get_db
-
+@pytest.fixture(scope="function")
 def mock_verify_oauth_token(token: str, provider: str):
     """
     Mock function to simulate OAuth token verification.
     """
     if token == "mock_token":
-        return 
+        return
     raise HTTPException(status_code=401, detail="Invalid token")
 
-# Override the dependency
-app.dependency_overrides[verify_oauth_token] = mock_verify_oauth_token
+@pytest.fixture(scope="function", autouse=True)
+def clean_test_db():
+    """
+    Clean up the test database after each test.
+    """
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+    yield  # Allow the test to run
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
 
-client = TestClient(app)
-
-# Define the db fixture
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="function", name="db")
 def db():
-    """Provide a database session for tests."""
     db = TestingSessionLocal()
     try:
         yield db
     finally:
         db.close()
 
+# Overrides
+app.dependency_overrides[get_db] = override_get_db
+app.dependency_overrides[verify_oauth_token] = mock_verify_oauth_token
+
+client = TestClient(app)
