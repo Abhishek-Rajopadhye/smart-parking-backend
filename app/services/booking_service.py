@@ -233,7 +233,7 @@ async def update_booking(db: Session, payment_data: Payment):
                 end_date_time=payment_data.end_time,
                 payment_id=payment.id,
                 total_slots=payment_data.total_slots,
-                status="Pending"
+                status="Booked"
             )
 
             db.add(booking)
