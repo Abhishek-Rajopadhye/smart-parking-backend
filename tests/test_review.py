@@ -7,6 +7,7 @@ from app.db.oauth_model import OAuthUser
 from app.db.spot_model import Spot
 from datetime import datetime
 
+
 @pytest.fixture
 def create_test_review(db: Session):
     """Fixture to create a test review in the database."""
@@ -36,7 +37,6 @@ def create_test_review(db: Session):
         close_time="20:00:00",
         description="Test spot description",
         available_days=["Monday", "Tuesday"],
-        image=[b"mock_image_data"],
         created_at=datetime.now()
     )
     db.add(spot)
@@ -63,6 +63,35 @@ def test_create_review(db: Session):
     """
     Test creating a new review.
     """
+    # Setup: create user and spot
+    user = OAuthUser(
+        provider="google",
+        provider_id="test_user",
+        email="test@example.com",
+        name="Test User",
+        profile_picture="http://example.com/avatar.png",
+        access_token="mock_token"
+    )
+    db.add(user)
+    spot = Spot(
+        spot_id=1,
+        owner_id="test_user",
+        spot_title="Test Spot",
+        address="123 Test St",
+        latitude=0.0,
+        longitude=0.0,
+        hourly_rate=10.0,
+        no_of_slots=5,
+        available_slots=5,
+        open_time="08:00:00",
+        close_time="20:00:00",
+        description="Test spot description",
+        available_days=["Monday", "Tuesday"],
+        created_at=datetime.now()
+    )
+    db.add(spot)
+    db.commit()
+
     # Test data
     test_review_data = {
         "user_id": "test_user",

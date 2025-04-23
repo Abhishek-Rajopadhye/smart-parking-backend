@@ -1,12 +1,11 @@
 from pydantic import BaseModel
-from sqlalchemy import LargeBinary
-from typing import List, Optional
+from typing import Optional
 from datetime import datetime
 
 class DocumentInfo(BaseModel):
     file_name: str
     file_type: str
-    file_data: LargeBinary
+    file_data: str
     uploaded_at: Optional[datetime]
 
 class SpotVerification(BaseModel):
