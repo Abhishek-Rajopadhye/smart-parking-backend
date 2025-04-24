@@ -348,6 +348,7 @@ async def get_booking_by_user(db: Session, user_id: int):
             db.query(
                 Booking,
                 Spot.spot_title,
+                Spot.hourly_rate,
                 Spot.address.label("spot_address"),
                 Payment.amount,
                 Payment.status.label("payment_status")
@@ -371,7 +372,8 @@ async def get_booking_by_user(db: Session, user_id: int):
                 "payment_id": booking.Booking.payment_id,
                 "payment_amount": booking.amount,
                 "payment_status": booking.payment_status,
-                "status": booking.Booking.status
+                "status": booking.Booking.status,
+                "hourly_rate":booking.hourly_rate
             }
             for booking in bookings
         ]
