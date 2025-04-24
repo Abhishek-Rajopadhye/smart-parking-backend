@@ -4,12 +4,12 @@ from fastapi import HTTPException
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.main import app
-from app.services.auth_service import verify_oauth_token
+from app.services.auth_service import verify_oauth_token, verify_google_token, verify_github_token
 from app.db.session import get_db, Base
 from app.db.oauth_model import OAuthUser
 from app.db.payment_model import Payment
 from app.db.booking_model import Booking
-from app.db.spot_model import Spot
+from app.db.spot_model import Spot, Document
 from app.db.review_model import Review
 import os
 from dotenv import load_dotenv
@@ -36,14 +36,32 @@ def override_get_db():
     finally:
         db.close()
 
-@pytest.fixture(scope="function")
-def mock_verify_oauth_token(token: str, provider: str):
+def mock_verify_oauth_token(token: str = None, provider: str = None):
     """
     Mock function to simulate OAuth token verification.
     """
-    if token == "mock_token":
-        return
-    raise HTTPException(status_code=401, detail="Invalid token")
+    print(token, provider)
+    if(provider=="google"):
+        return verify_google_token(token, provider)
+    elif(provider=="github"):
+        return verify_github_token(token, provider)
+
+
+def mock_verify_google_token(token: str = None, provider: str = None):
+    """
+    Mock function to simulate OAuth token verification.
+    """
+    print(token, provider)
+    if(token == "mock_token" and provider=="google"):
+        return True
+
+def mock_verify_github_token(token: str = None, provider: str = None):
+    """
+    Mock function to simulate OAuth token verification.
+    """
+    print(token, provider)
+    if(token == "mock_token" and provider=="github"):
+        return True
 
 @pytest.fixture(scope="function", autouse=True)
 def clean_test_db():
@@ -67,5 +85,8 @@ def db():
 # Overrides
 app.dependency_overrides[get_db] = override_get_db
 app.dependency_overrides[verify_oauth_token] = mock_verify_oauth_token
+app.dependency_overrides[verify_google_token] = mock_verify_google_token
+app.dependency_overrides[verify_github_token] = mock_verify_github_token
+
 
 client = TestClient(app)
