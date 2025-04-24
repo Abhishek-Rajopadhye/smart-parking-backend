@@ -79,6 +79,28 @@ async def add_spot(spot: AddSpot, db: Session):
         raise HTTPException(
             status_code=400, detail="Error occur during adding spot.")
 
+def get_spot_by_id(spot_id: int, db: Session):
+    """
+    Retrieve a spot by its unique spot_id.
+
+    Parameters:
+        spot_id (int): The unique identifier of the spot.
+        db (Session): SQLAlchemy database session.
+
+    Returns:
+        Spot: The spot object if found.
+
+    Raises:
+        HTTPException (404): If the spot is not found.
+        HTTPException (500): If there is a database error.
+    """
+    try:
+        spot = db.query(Spot).filter(Spot.spot_id == spot_id).first()
+        if not spot:
+            raise HTTPException(status_code=404, detail="Spot not found.")
+        return spot
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Database Error: " + str(e))
 
 def get_spot_list_of_owner(user_id: int, db: Session):
     """

@@ -29,7 +29,7 @@ class Document(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     spot_id = Column(Integer, ForeignKey("spots.spot_id"), index=True)
-    document_type = Column(String, nullable=False)  # "doc1", "doc2", "doc3"
+    document_type = Column(String, nullable=False)  # Identity_proof, supporting_document, ownership_proof
     content = Column(LargeBinary, nullable=False)   # PDF as BLOB
     filename = Column(String, nullable=False)
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())

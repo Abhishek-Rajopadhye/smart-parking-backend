@@ -22,9 +22,8 @@ class OwnerProfile(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    id: int
     name: Optional[str] = None
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
     profile_picture: Optional[str] = None
-    total_earnings: int
+    total_earnings: Optional[int] = None
