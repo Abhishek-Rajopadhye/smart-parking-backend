@@ -2,10 +2,52 @@ from fastapi import APIRouter, Depends, HTTPException, File, Form, UploadFile
 from sqlalchemy.orm import Session  # interact with database
 from app.db.session import get_db
 from typing import Optional
+from fastapi.responses import JSONResponse
 from app.services.spot_service import add_document, add_spot, get_spot_list_of_owner, update_spot_details, delete_spot
 from app.schemas.spot import AddSpot, EditSpot
+from app.db.spot_model import Document, Spot
+from fastapi.responses import StreamingResponse
+from io import BytesIO
 
 router = APIRouter()
+
+@router.get("/documents", response_class=JSONResponse)
+async def get_all_documents(db: Session = Depends(get_db)):
+    # Join documents with their spot info
+    results = db.query(Spot).all()
+
+    response = []
+    for spot in results:
+        spot_docs = db.query(Document).filter(Document.spot_id == spot.spot_id).all()
+
+        doc_dict = {}
+        for doc in spot_docs:
+            doc_dict[doc.document_type] = {
+                "filename": doc.filename,
+                "url": f"spots/documents/view/{doc.id}"
+            }
+
+        response.append({
+            "spot_id": spot.spot_id,
+            "spot_title": spot.spot_title,
+            "spot_address": spot.address,
+            "documents": doc_dict
+        })
+
+    return response
+
+@router.get("/documents/view/{doc_id}")
+async def view_document(doc_id: int, db: Session = Depends(get_db)):
+    print("view document")
+    document = db.query(Document).filter(Document.id == doc_id).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    return StreamingResponse(
+        BytesIO(document.content),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename={document.filename}"}
+    )
 
 @router.post("/add-documents")
 async def add_documents_route(spot_id: int = Form(...),doc1: UploadFile = File(...),
