@@ -9,8 +9,8 @@ class BookingUser(HttpUser):
         # Define the POST request to your /bookings/book-spot endpoint
         payload = {
             "user_id": "111919577987638512190",
-            "spot_id": 42,
-            "total_slots": 4,
+            "spot_id": 4,
+            "total_slots": 2,
             "start_date_time": "2023-10-01T10:00:00",
             "end_date_time": "2023-10-01T12:00:00",
             "total_amount": 20,
