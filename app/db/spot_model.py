@@ -21,4 +21,15 @@ class Spot(Base):
     description = Column(String, nullable=True)
     available_days = Column(ARRAY(String), nullable=False)
     image = Column(ARRAY(LargeBinary), nullable=True)
+    verification_status = Column(Integer, default=0)  # 0: pending, 1: approved, -1: rejected
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class Document(Base):
+    __tablename__ = "documents"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    spot_id = Column(Integer, ForeignKey("spots.spot_id"), index=True)
+    document_type = Column(String, nullable=False)  # Identity_proof, supporting_document, ownership_proof
+    content = Column(LargeBinary, nullable=False)   # PDF as BLOB
+    filename = Column(String, nullable=False)
+    uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
