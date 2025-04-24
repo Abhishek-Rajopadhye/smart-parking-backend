@@ -113,33 +113,36 @@ async def create_booking(db: Session, booking_data):
         return order details else raise an exception
     """
     try:
-        
         db.begin()
 
+        # Lock the spot for update
         slot = db.execute(text(
             "SELECT * FROM spots WHERE spot_id = :spot_id AND available_slots >= :total_slots FOR UPDATE"),
-            {"spot_id": booking_data.spot_id,
-                "total_slots": booking_data.total_slots}
+            {"spot_id": booking_data.spot_id, "total_slots": booking_data.total_slots}
         ).fetchone()
 
+        # If no spot is available, raise an error
         if not slot:
             raise HTTPException(status_code=400, detail="No Slot Available")
-        print("after not slot")
+        print("Slot available, proceeding with booking...")
+
         try:
+            # Create Razorpay order
             order_data = {
                 "amount": booking_data.total_amount * 100,  # Convert INR to paise
                 "currency": "INR",
                 "receipt": f"receipt_{booking_data.user_id}",
                 "payment_capture": 1  # Auto capture
             }
-            print("before razorpay order")
+            print("Creating Razorpay order...")
             razorpay_order = razorpay_client.order.create(order_data)
-            print("after razorpay order")
+            print("Razorpay order created successfully")
         except Exception as payment_error:
             db.rollback()
             raise HTTPException(
                 status_code=402, detail=f"Failed to create Razorpay order: {str(payment_error)}")
 
+        # Create new payment record
         new_payment = Payment(
             user_id=booking_data.user_id,
             spot_id=booking_data.spot_id,
@@ -147,17 +150,18 @@ async def create_booking(db: Session, booking_data):
             razorpay_order_id=razorpay_order["id"],
             status="pending"
         )
-        print(new_payment)
-        print("Payment init")
         db.add(new_payment)
-        db.commit()
+        db.commit()  # Commit payment record
         db.refresh(new_payment)
+
+        # Update spot availability
         db.execute(text(
-        "UPDATE spots SET available_slots = available_slots - :total_slots WHERE spot_id = :spot_id"),
-        {"spot_id": booking_data.spot_id,
-        "total_slots": booking_data.total_slots}
+            "UPDATE spots SET available_slots = available_slots - :total_slots WHERE spot_id = :spot_id"),
+            {"spot_id": booking_data.spot_id, "total_slots": booking_data.total_slots}
         )
-        db.commit()  # Update payment status
+        db.commit()  # Commit spot availability update
+
+        # Return order confirmation details
         return {
             "order_id": razorpay_order["id"],
             "amount": razorpay_order["amount"],
@@ -169,19 +173,23 @@ async def create_booking(db: Session, booking_data):
 
     except HTTPException as http_error:
         db.rollback()
-        raise HTTPException(status_code=402, detail=str(
-            payment_error))  # 402 Payment Required
+        raise HTTPException(status_code=http_error.status_code, detail=str(http_error.detail))
+
     except BookingFailedException as booking_error:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(booking_error))
+        raise HTTPException(status_code=500, detail=f"Booking failed: {str(booking_error)}")
+
     except IntegrityError as db_error:
         db.rollback()
         raise HTTPException(
-            status_code=500, detail=f"Database error: {str(db_error)}")
+            status_code=500, detail=f"Database error: {str(db_error)}"
+        )
+
     except Exception as unexpected_error:
         db.rollback()
         raise HTTPException(
-            status_code=500, detail=f"Unexpected error: {str(unexpected_error)}")
+            status_code=500, detail=f"Unexpected error: {str(unexpected_error)}"
+        )
 
 async def update_booking(db: Session, payment_data: Payment):
     """
@@ -233,7 +241,7 @@ async def update_booking(db: Session, payment_data: Payment):
                 end_date_time=payment_data.end_time,
                 payment_id=payment.id,
                 total_slots=payment_data.total_slots,
-                status="Pending"
+                status="Booked"
             )
 
             db.add(booking)
