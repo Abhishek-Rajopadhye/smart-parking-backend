@@ -113,49 +113,55 @@ async def create_booking(db: Session, booking_data):
         return order details else raise an exception
     """
     try:
-        with db.begin():  # SQLAlchemy recommended transaction
-            # Lock and check availability
-            slot = db.execute(text("""
-                SELECT * FROM spots
-                WHERE spot_id = :spot_id AND available_slots >= :total_slots
-                FOR UPDATE
-            """), {
-                "spot_id": booking_data.spot_id,
-                "total_slots": booking_data.total_slots
-            }).fetchone()
+        db.begin()
+        
+        # Lock the spot for update
+        slot = db.execute(text(
+            "SELECT * FROM spots WHERE spot_id = :spot_id AND available_slots >= :total_slots FOR UPDATE"),
+            {"spot_id": booking_data.spot_id, "total_slots": booking_data.total_slots}
+        ).fetchone()
 
-            if not slot:
-                raise HTTPException(status_code=400, detail="No Slot Available")
+        # If no spot is available, raise an error
+        if not slot:
+            raise HTTPException(status_code=400, detail="No Slot Available")
+        print("Slot available, proceeding with booking...")
 
-            try:
-                order_data = {
-                    "amount": booking_data.total_amount * 100,
-                    "currency": "INR",
-                    "receipt": f"receipt_{booking_data.user_id}",
-                    "payment_capture": 1
-                }
-                razorpay_order = razorpay_client.order.create(order_data)
-            except Exception as payment_error:
-                raise HTTPException(status_code=402, detail=f"Razorpay Error: {str(payment_error)}")
+        try:
+            # Create Razorpay order
+            order_data = {
+                "amount": booking_data.total_amount * 100,  # Convert INR to paise
+                "currency": "INR",
+                "receipt": f"receipt_{booking_data.user_id}",
+                "payment_capture": 1  # Auto capture
+            }
+            print("Creating Razorpay order...")
+            razorpay_order = razorpay_client.order.create(order_data)
+            print("Razorpay order created successfully")
+        except Exception as payment_error:
+            db.rollback()
+            raise HTTPException(
+                status_code=402, detail=f"Failed to create Razorpay order: {str(payment_error)}")
 
-            new_payment = Payment(
-                user_id=booking_data.user_id,
-                spot_id=booking_data.spot_id,
-                amount=booking_data.total_amount,
-                razorpay_order_id=razorpay_order["id"],
-                status="pending"
-            )
-            db.add(new_payment)
-            print(new_payment)
-            db.execute(text("""
-                UPDATE spots SET available_slots = available_slots - :total_slots
-                WHERE spot_id = :spot_id
-            """), {
-                "spot_id": booking_data.spot_id,
-                "total_slots": booking_data.total_slots
-            })
-
+        # Create new payment record
+        new_payment = Payment(
+            user_id=booking_data.user_id,
+            spot_id=booking_data.spot_id,
+            amount=booking_data.total_amount,
+            razorpay_order_id=razorpay_order["id"],
+            status="pending"
+        )
+        db.add(new_payment)
+        db.commit()  # Commit payment record
         db.refresh(new_payment)
+
+        # Update spot availability
+        db.execute(text(
+            "UPDATE spots SET available_slots = available_slots - :total_slots WHERE spot_id = :spot_id"),
+            {"spot_id": booking_data.spot_id, "total_slots": booking_data.total_slots}
+        )
+        db.commit()  # Commit spot availability update
+
+        # Return order confirmation details
         return {
             "order_id": razorpay_order["id"],
             "amount": razorpay_order["amount"],
@@ -166,13 +172,24 @@ async def create_booking(db: Session, booking_data):
         }
 
     except HTTPException as http_error:
-        raise http_error
+        db.rollback()
+        raise HTTPException(status_code=http_error.status_code, detail=str(http_error.detail))
+
+    except BookingFailedException as booking_error:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Booking failed: {str(booking_error)}")
 
     except IntegrityError as db_error:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(db_error)}")
+        db.rollback()
+        raise HTTPException(
+            status_code=500, detail=f"Database error: {str(db_error)}"
+        )
 
     except Exception as unexpected_error:
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(unexpected_error)}")
+        db.rollback()
+        raise HTTPException(
+            status_code=500, detail=f"Unexpected error: {str(unexpected_error)}"
+        )
 
 async def update_booking(db: Session, payment_data: Payment):
     """
@@ -331,7 +348,6 @@ async def get_booking_by_user(db: Session, user_id: int):
             db.query(
                 Booking,
                 Spot.spot_title,
-                Spot.hourly_rate,
                 Spot.address.label("spot_address"),
                 Payment.amount,
                 Payment.status.label("payment_status")
@@ -355,8 +371,7 @@ async def get_booking_by_user(db: Session, user_id: int):
                 "payment_id": booking.Booking.payment_id,
                 "payment_amount": booking.amount,
                 "payment_status": booking.payment_status,
-                "status": booking.Booking.status,
-                "hourly_rate":booking.hourly_rate
+                "status": booking.Booking.status
             }
             for booking in bookings
         ]
