@@ -7,31 +7,33 @@ from sqlalchemy.sql import text
 import base64
 
 
-async def add_document(spot_id, doc1, doc2, doc3 ,db: Session):
+async def add_document(spot_id, doc1, doc2, doc3, db: Session):
     try:
-        for idx, file in enumerate([doc1, doc2, doc3], start=1):
-            if file.content_type != "application/pdf":
-                raise HTTPException(status_code=400, detail=f"doc{idx} is not a valid PDF")
+        # List of documents to iterate over, with their corresponding names
+        documents = [doc1, doc2, doc3]
+        document_types = ["Identity Proof", "Ownership Proof", "Other Document"]
 
-            content = await file.read()
-            doc_type = None
-            if idx == 1:
-                doc_tye = "Identity Proof"
-            elif idx == 2:
-                doc_tye = "Ownership Proof"
-            else:
-                doc_tye = "Other Document"
-            document = Document(
-                spot_id=spot_id,
-                document_type=doc_tye,
-                filename=file.filename,
-                content=content,
-            )
-            db.add(document)
+        for idx, file in enumerate(documents, start=1):
+            if file:  # Only process files that are not None
+                if file.content_type != "application/pdf":
+                    raise HTTPException(status_code=400, detail=f"doc{idx} is not a valid PDF")
+
+                content = await file.read()
+                doc_type = document_types[idx - 1]
+
+                document = Document(
+                    spot_id=spot_id,
+                    document_type=doc_type,
+                    filename=file.filename,
+                    content=content,
+                )
+                db.add(document)
+        
         db.commit()
     except Exception as e:
         print(e)
-        raise HTTPException(status_code=400, detail="Error occur during adding document.")
+        raise HTTPException(status_code=400, detail="Error occurred during adding document.")
+
 
 async def add_spot(spot: AddSpot, db: Session):
     """

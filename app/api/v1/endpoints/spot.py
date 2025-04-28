@@ -52,8 +52,7 @@ async def view_document(doc_id: int, db: Session = Depends(get_db)):
 @router.post("/add-documents")
 async def add_documents_route(spot_id: int = Form(...),doc1: UploadFile = File(...),
     doc2: UploadFile = File(...),
-    doc3: UploadFile = File(...), db: Session = Depends(get_db)):
-
+    doc3: Optional[UploadFile] = File(None), db: Session = Depends(get_db)):
     try:
         response = await add_document(spot_id, doc1, doc2, doc3, db)
         return response

@@ -1,10 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.db.session import get_db
+import threading
+import asyncio
 from app.services.booking_service import create_booking, get_bookings, get_booking_by_user, update_booking, get_booking_by_spot, get_bookings_of_spots_of_owner, cancel_booking, check_in_booking, check_out_booking, update_available_slots, refresh_bookings
 from app.schemas.booking import BookingCreate, BookingUpdate
 from app.schemas.payment import Payment
-
+from concurrent.futures import ThreadPoolExecutor
+from app.db.session import SessionLocal
 router = APIRouter()
 
 
@@ -66,35 +69,42 @@ async def get_booking_by_spot_id(spot_id: int, db: Session = Depends(get_db)):
     """
     return await get_booking_by_spot(db, spot_id)
 
+def thread_safe_booking(thread_id, booking_data: BookingCreate):
+    db = SessionLocal()
+    try:
+        print(f"[Thread-{thread_id}] Booking started")
+        result = asyncio.run(create_booking(db, booking_data))
+        print(f"[Thread-{thread_id}] Result: {result}")
+        return result
+    except Exception as e:
+        print(f"[Thread-{thread_id}] Error: {e}")
+    # finally:
+    #     db.close()
 
 @router.post("/book-spot")
-async def book_spot(booking_data: BookingCreate, db: Session = Depends(get_db)):
-    """
-    Book a parking spot for the user.
-
-    Parameters:
-        booking_data (BookingCreate): Booking data
-        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
-
-    Returns:
-        dict: Response message otherwise raise appropriate HTTPException and return the error message
-
-    Example:
-        book_spot(booking_data)
-        booking a parking spot for the user
-        return the booking details
-    """
+async def book_spot(booking_data: BookingCreate):
+    db = SessionLocal()
     try:
-        print(booking_data.__dict__)
         response = await create_booking(db, booking_data)
-        # print(response)
-        if "error" in response:
-            raise HTTPException(status_code=400, detail=response["detail"])
+        print(response)
         return response
-    except Exception as exception:
-        print(exception)
-        raise HTTPException(status_code=400, detail="Failed to book the spot")
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=400, detail=str(e))
+    # try:
+    #     n_threads = 5
 
+    #     loop = asyncio.get_running_loop()
+    #     with ThreadPoolExecutor(max_workers=n_threads) as executor:
+    #         tasks = [
+    #             loop.run_in_executor(executor, thread_safe_booking, i, booking_data)
+    #             for i in range(n_threads)
+    #         ]
+    #         results = await asyncio.gather(*tasks)
+
+    #     return {"message": "Concurrent bookings completed", "results": results}
+    # except Exception as e:
+    #     raise HTTPException(status_code=400, detail=f"Failed to book the spot: {e}")
 
 @router.delete("/{booking_id}")
 async def cancel_spot_booking(booking_id: str, db: Session = Depends(get_db)):
@@ -194,3 +204,4 @@ async def update_booking_slots(user_id: str, db: Session = Depends(get_db)):
     except Exception as exception:
         
         raise HTTPException(status_code=500, detail="Failed to update the booking slots")
+    
