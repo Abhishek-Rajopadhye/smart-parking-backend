@@ -90,7 +90,7 @@ async def book_spot(booking_data: BookingCreate):
         return response
     except Exception as e:
         print(e)
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Failed to book the spot")
     # try:
     #     n_threads = 5
 

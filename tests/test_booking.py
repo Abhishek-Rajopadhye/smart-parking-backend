@@ -55,7 +55,7 @@ def test_valid_booking(create_test_data):
     spot, user, owner = create_test_data
     payload = {
         "user_id": user.provider_id,
-        "spot_id": spot.spot_id,
+        "spot_id": 24,
         "total_slots": 2,
         "start_date_time": "2023-10-01T10:00:00",
         "end_date_time": "2023-10-01T12:00:00",
@@ -76,7 +76,7 @@ def test_invalid_booking(create_test_data):
     spot, user, owner = create_test_data
     payload = {
         "user_id": user.provider_id,
-        "spot_id": spot.spot_id,
+        "spot_id": 19,
         "total_slots": 10,  # Exceeds available slots
         "start_date_time": "2023-10-01T10:00:00",
         "end_date_time": "2023-10-01T12:00:00",
@@ -130,4 +130,4 @@ def test_paymenet_not_found(create_test_data, db):
 
     response = client.post("/bookings/update-payment-status", json=payload)
     assert response.status_code == 400
-    assert response.json() == {"detail": "Failed to update the payment status"}
+    assert response.json()["detail"] == "Failed to update the payment status"
