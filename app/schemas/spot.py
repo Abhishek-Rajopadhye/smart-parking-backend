@@ -21,6 +21,7 @@ class AddSpot(BaseModel):
     doc1: UploadFile = None
     doc2: UploadFile = None
     doc3: UploadFile = None
+    verification_status: int  
 
 class EditSpot(BaseModel):
     spot_address: str
