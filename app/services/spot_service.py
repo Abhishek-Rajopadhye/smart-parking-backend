@@ -71,7 +71,8 @@ async def add_spot(spot: AddSpot, db: Session):
             close_time=spot.close_time,
             description=spot.spot_description,
             available_days=spot.available_days,
-            image=image_blobs
+            image=image_blobs,
+            verification_status=spot.verification_status,
         )
         db.add(new_spot)
         db.commit()

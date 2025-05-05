@@ -21,7 +21,7 @@ class Spot(Base):
     description = Column(String, nullable=True)
     available_days = Column(ARRAY(String), nullable=False)
     image = Column(ARRAY(LargeBinary), nullable=True)
-    verification_status = Column(Integer, default=0)  # 0: pending, 1: approved, -1: rejected
+    verification_status = Column(Integer)  # 0: pending, 1: approved, -1: rejected
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class Document(Base):
