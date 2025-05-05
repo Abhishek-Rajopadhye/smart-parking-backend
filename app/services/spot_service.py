@@ -11,12 +11,14 @@ async def add_document(spot_id, doc1, doc2, doc3, db: Session):
     try:
         # List of documents to iterate over, with their corresponding names
         documents = [doc1, doc2, doc3]
-        document_types = ["Identity Proof", "Ownership Proof", "Other Document"]
+        document_types = ["Identity Proof",
+                          "Ownership Proof", "Other Document"]
 
         for idx, file in enumerate(documents, start=1):
             if file:  # Only process files that are not None
                 if file.content_type != "application/pdf":
-                    raise HTTPException(status_code=400, detail=f"doc{idx} is not a valid PDF")
+                    raise HTTPException(
+                        status_code=400, detail=f"doc{idx} is not a valid PDF")
 
                 content = await file.read()
                 doc_type = document_types[idx - 1]
@@ -28,11 +30,12 @@ async def add_document(spot_id, doc1, doc2, doc3, db: Session):
                     content=content,
                 )
                 db.add(document)
-        
+
         db.commit()
     except Exception as e:
         print(e)
-        raise HTTPException(status_code=400, detail="Error occurred during adding document.")
+        raise HTTPException(
+            status_code=400, detail="Error occurred during adding document.")
 
 
 async def add_spot(spot: AddSpot, db: Session):
@@ -82,6 +85,7 @@ async def add_spot(spot: AddSpot, db: Session):
         raise HTTPException(
             status_code=400, detail="Error occur during adding spot.")
 
+
 def get_spot_by_id(spot_id: int, db: Session):
     """
     Retrieve a spot by its unique spot_id.
@@ -103,7 +107,9 @@ def get_spot_by_id(spot_id: int, db: Session):
             raise HTTPException(status_code=404, detail="Spot not found.")
         return spot
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Database Error: " + str(e))
+        raise HTTPException(
+            status_code=500, detail="Database Error: " + str(e))
+
 
 def get_spot_list_of_owner(user_id: int, db: Session):
     """

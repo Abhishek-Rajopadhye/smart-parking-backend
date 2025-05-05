@@ -76,6 +76,7 @@ async def add_spot_route(spot_address: str = Form(...),
     available_days: list[str] = Form(...),
     image: Optional[list[str]] = Form(None),
     verification_status: int = Form(...),
+
     db: Session = Depends(get_db)):
     """
     Add a parking spot for the user.
