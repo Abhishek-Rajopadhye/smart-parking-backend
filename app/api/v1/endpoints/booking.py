@@ -90,21 +90,7 @@ async def book_spot(booking_data: BookingCreate):
         return response
     except Exception as e:
         print(e)
-        raise HTTPException(status_code=400, detail=str(e))
-    # try:
-    #     n_threads = 5
-
-    #     loop = asyncio.get_running_loop()
-    #     with ThreadPoolExecutor(max_workers=n_threads) as executor:
-    #         tasks = [
-    #             loop.run_in_executor(executor, thread_safe_booking, i, booking_data)
-    #             for i in range(n_threads)
-    #         ]
-    #         results = await asyncio.gather(*tasks)
-
-    #     return {"message": "Concurrent bookings completed", "results": results}
-    # except Exception as e:
-    #     raise HTTPException(status_code=400, detail=f"Failed to book the spot: {e}")
+        raise HTTPException(status_code=400, detail="Failed to book the spot")
 
 @router.delete("/{booking_id}")
 async def cancel_spot_booking(booking_id: str, db: Session = Depends(get_db)):

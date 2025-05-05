@@ -14,12 +14,14 @@ class AddSpot(BaseModel):
     hourly_rate: int
     open_time: str
     close_time: str
+    verification_status:int
     spot_description: Optional[str] = None
     available_days: list[str] = None
     image: Optional[list[str]] = None
     doc1: UploadFile = None
     doc2: UploadFile = None
     doc3: UploadFile = None
+    verification_status: int  
 
 class EditSpot(BaseModel):
     spot_address: str
