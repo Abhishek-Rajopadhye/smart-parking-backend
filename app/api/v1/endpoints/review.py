@@ -4,6 +4,7 @@ from typing import List
 from app.schemas.review import Review, ReviewCreate, ReviewUpdate
 from app.services.review_service import get_review, get_reviews_by_spot, create_review, update_review, delete_review
 from app.db.session import get_db
+from sqlalchemy.exc import IntegrityError, DataError, SQLAlchemyError
 
 router = APIRouter()
 
@@ -21,12 +22,20 @@ def read_review(review_id: int, db: Session = Depends(get_db)):
         Review: The retrieved review.
 
     Raises:
-        HTTPException: If the review is not found.
+        HTTPException:
+            404: If the review is not found (KeyError)
+            500: If an internal server error occurs or a database error occurs
     """
-    db_review = get_review(db, review_id)
-    if db_review is None:
+    try:
+        db_review = get_review(db, review_id)
+        return db_review
+    except KeyError:
         raise HTTPException(status_code=404, detail="Review not found")
-    return db_review
+    except SQLAlchemyError as db_error:
+        raise HTTPException(status_code=500, detail="DB Error: " + str(db_error))
+    except Exception as general_error:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(general_error)}")
+
 
 
 @router.get("/spot/{spot_id}", response_model=List[Review])
@@ -40,8 +49,16 @@ def read_reviews_by_spot(spot_id: int, db: Session = Depends(get_db)):
 
     Returns:
         List[Review]: A list of reviews for the specified spot.
+    Raises:
+        HTTPException:
+            500: If an internal server error occurs    
     """
-    return get_reviews_by_spot(db, spot_id)
+    try:
+        return get_reviews_by_spot(db, spot_id)
+    except SQLAlchemyError as db_error:
+        raise HTTPException(status_code=500, detail="DB Error: " + str(db_error))
+    except Exception as general_error:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(general_error)}")
 
 
 @router.post("/", response_model=Review)
@@ -55,9 +72,19 @@ def create_new_review(review: ReviewCreate, db: Session = Depends(get_db)):
 
     Returns:
         Review: The created review.
+    Raises:
+        HTTPException:
+            404: If the review is not found (KeyError)
+            500: If an internal server error occurs, if there is an integrity error or there is a database error
     """
-    return create_review(db, review)
-
+    try:
+        return create_review(db, review)
+    except IntegrityError as integrity_error:
+        raise HTTPException(status_code=500, detail="Integrity Error: " + str(integrity_error))
+    except SQLAlchemyError as db_error:
+        raise HTTPException(status_code=500, detail="DB Error: " + str(db_error))
+    except Exception as general_error:
+        raise HTTPException(status_code=500, detail="Internal Server Error: " + str(general_error))
 
 @router.put("/{review_id}", response_model=Review)
 def update_existing_review(review_id: int, review: ReviewUpdate, db: Session = Depends(get_db)):
@@ -73,13 +100,21 @@ def update_existing_review(review_id: int, review: ReviewUpdate, db: Session = D
         Review: The updated review.
 
     Raises:
-        HTTPException: If the review is not found.
+        HTTPException:
+            404: If the review is not found (KeyError)
+            500: If an internal server error occurs, there is a database error, or an integrity error
     """
-    db_review = update_review(db, review_id, review)
-    if db_review is None:
+    try:
+        db_review = update_review(db, review_id, review)
+        return db_review
+    except KeyError:
         raise HTTPException(status_code=404, detail="Review not found")
-    return db_review
-
+    except IntegrityError as integrity_error:
+        raise HTTPException(status_code=500, detail="Integrity Error: " + str(integrity_error))
+    except SQLAlchemyError as db_error:
+        raise HTTPException(status_code=500, detail="DB Error: " + str(db_error))
+    except Exception as general_error:
+        raise HTTPException(status_code=500, detail="Internal Server Error: " + str(general_error))
 
 @router.delete("/{review_id}", response_model=bool)
 def delete_existing_review(review_id: int, db: Session = Depends(get_db)):
@@ -94,9 +129,16 @@ def delete_existing_review(review_id: int, db: Session = Depends(get_db)):
         bool: True if the review was deleted, False otherwise.
 
     Raises:
-        HTTPException: If the review is not found.
+        HTTPException:
+            404: If the review is not found (KeyError)
+            500: If an internal server error occurs, or there is a database error
     """
-    success = delete_review(db, review_id)
-    if not success:
+    try:
+        success = delete_review(db, review_id)
+        return success
+    except KeyError:
         raise HTTPException(status_code=404, detail="Review not found")
-    return success
+    except SQLAlchemyError as db_error:
+        raise HTTPException(status_code=500, detail="DB Error: " + str(db_error))
+    except Exception as general_error:
+        raise HTTPException(status_code=500, detail="Internal Server Error: " + str(general_error))
