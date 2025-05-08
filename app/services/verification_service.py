@@ -90,7 +90,7 @@ def accept_request(db: Session, spot_id: int):
         Exception: For any other unexpected errors.
     """
     try:
-        spot = db.query(Spot).filter(Spot.spot_id == spot_id).first()
+        spot = db.query(Spot.spot_id.label("spot_id"), Spot.verification_status.label("verification_status")).filter(Spot.spot_id == spot_id).first()
         if not spot:
             raise KeyError("Spot not found")
         spot.verification_status = 1
@@ -125,7 +125,7 @@ def reject_request(db: Session, spot_id: int):
         Exception: For any other unexpected errors.
     """
     try:
-        spot = db.query(Spot).filter(Spot.spot_id == spot_id).first()
+        spot = db.query(Spot.spot_id.label("spot_id"), Spot.verification_status.label("verification_status")).filter(Spot.spot_id == spot_id).first()
         if not spot:
             raise KeyError("Spot not found")
         spot.verification_status = -1
