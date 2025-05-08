@@ -172,19 +172,7 @@ def create_oauth_user(db: Session, user_data: dict):
     Returns:
         OAuthUser: The created or updated user object
     """
-    new_user = OAuthUser(
-    provider='google',
-    provider_id='google-oauth2|1234567890',
-    email='johndoe@gmail.com',
-    name='John Doe',
-    phone='1234567890',
-    profile_picture='https://example.com/images/johndoe.jpg',
-    access_token='ya29.a0AfH6SMCuK_token_example_1',
-    refresh_token='1//0g_example_refresh_token'
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+   
     user = get_user_by_provider_id(
         db, user_data["provider"], user_data["provider_id"])
 
