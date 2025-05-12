@@ -172,6 +172,7 @@ def create_oauth_user(db: Session, user_data: dict):
     Returns:
         OAuthUser: The created or updated user object
     """
+
     user = get_user_by_provider_id(
         db, user_data["provider"], user_data["provider_id"])
 

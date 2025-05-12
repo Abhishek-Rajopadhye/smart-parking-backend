@@ -17,5 +17,6 @@ class ParkingSpot(BaseModel):
     description: Optional[str] = None
     available_days: List[str]
     image: Optional[List[str]] = None
+    status:int
 
     model_config = ConfigDict(from_attributes=True)

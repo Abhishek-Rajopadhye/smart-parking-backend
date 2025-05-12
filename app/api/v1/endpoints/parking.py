@@ -36,8 +36,9 @@ async def fetch_parking_spot(spot_id: int, db: Session = Depends(get_db)):
                 base64.b64encode(blob).decode("utf-8")
                 for blob in (spot.image or [])
             ],
+            "status": spot.verification_status
         }
-
+        print(spot_dict)
         return spot_dict
     except Exception as error:
         raise HTTPException(
@@ -72,6 +73,7 @@ async def fetch_parking_spots(db: Session = Depends(get_db)):
                     base64.b64encode(blob).decode("utf-8")
                     for blob in (spot.image or [])
                 ],
+                "status" : spot.verification_status
             }
             out.append(spot_dict)
 

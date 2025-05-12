@@ -67,7 +67,8 @@ def accept_verification_request(spot_id: int, db: Session = Depends(get_db)):
             500: Any other error occurs during the process (Exception)
     """
     try:
-        return accept_request(db, spot_id)
+        accept_request(db, spot_id)
+        return "Success", 200
     except KeyError as spot_not_found:
         raise HTTPException(status_code=404, detail=str(spot_not_found))
     except ValueError as value_error:
@@ -100,7 +101,8 @@ def reject_verification_request(spot_id: int, db: Session = Depends(get_db)):
             500: Any other error occurs during the process (Exception)
     """
     try:
-        return reject_request(db, spot_id)
+        reject_request(db, spot_id)
+        return "Success", 200
     except KeyError as spot_not_found:
         raise HTTPException(status_code=404, detail=str(spot_not_found))
     except ValueError as value_error:
