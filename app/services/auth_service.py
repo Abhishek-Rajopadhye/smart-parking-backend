@@ -172,16 +172,16 @@ def create_oauth_user(db: Session, user_data: dict):
     Returns:
         OAuthUser: The created or updated user object
     """
+
     user = get_user_by_provider_id(
         db, user_data["provider"], user_data["provider_id"])
-
     if user:
         user.access_token = user_data["access_token"]
         db.commit()
         return user
-
     new_user = OAuthUser(**user_data)
     db.add(new_user)
     db.commit()
+    temp = OAuthUser()
     db.refresh(new_user)
     return new_user
