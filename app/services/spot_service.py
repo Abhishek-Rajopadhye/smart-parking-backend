@@ -57,6 +57,7 @@ async def add_spot(spot: AddSpot, db: Session):
     try:
         #   print(spot)
         print("Adding spot")
+        
         image_blobs = []
         for image_b64 in (spot.image or []):
             image_data = base64.b64decode(image_b64)
