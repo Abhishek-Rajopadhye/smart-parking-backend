@@ -86,7 +86,6 @@ async def book_spot(booking_data: BookingCreate):
     db = SessionLocal()
     try:
         response = await create_booking(db, booking_data)
-        print(response)
         return response
     except Exception as e:
         print(e)
@@ -115,7 +114,6 @@ async def cancel_spot_booking(booking_id: str, db: Session = Depends(get_db)):
 @router.post("/update-payment-status")
 async def update_payment_status(booking_data: Payment, db: Session = Depends(get_db)):
     try:
-        print(booking_data.__dict__)
         response = await update_booking(db, booking_data)
         return response
     except Exception as exception:

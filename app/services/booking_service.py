@@ -146,7 +146,6 @@ async def create_booking(db: Session, booking_data):
                 status="pending"
             )
             db.add(new_payment)
-            print(new_payment)
             db.execute(text("""
                 UPDATE spots SET available_slots = available_slots - :total_slots
                 WHERE spot_id = :spot_id
