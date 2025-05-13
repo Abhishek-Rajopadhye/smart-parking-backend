@@ -4,6 +4,23 @@ from typing import List
 from app.db.session import get_db
 from app.schemas.verification import SpotVerification
 from app.services.verification_service import get_pending_spot_verifications, accept_request, reject_request
+import base64
+
+def spot_to_dict(spot):
+    import base64
+    result = {column.name: getattr(spot, column.name) for column in spot.__table__.columns}
+    # Handle image field
+    if "image" in result:
+        if isinstance(result["image"], bytes):
+            result["image"] = base64.b64encode(result["image"]).decode("utf-8")
+        elif isinstance(result["image"], list):
+            # Encode each image in the list if not empty
+            result["image"] = [
+                base64.b64encode(img).decode("utf-8") if isinstance(img, bytes) else img
+                for img in result["image"]
+            ] if result["image"] else []
+        # If None, leave as is
+    return result
 
 router = APIRouter()
 
@@ -67,8 +84,8 @@ def accept_verification_request(spot_id: int, db: Session = Depends(get_db)):
             500: Any other error occurs during the process (Exception)
     """
     try:
-        accept_request(db, spot_id)
-        return "Success", 200
+        return_spot = accept_request(db, spot_id)
+        return spot_to_dict(return_spot)
     except KeyError as spot_not_found:
         raise HTTPException(status_code=404, detail=str(spot_not_found))
     except ValueError as value_error:
@@ -101,8 +118,8 @@ def reject_verification_request(spot_id: int, db: Session = Depends(get_db)):
             500: Any other error occurs during the process (Exception)
     """
     try:
-        reject_request(db, spot_id)
-        return "Success", 200
+        return_spot = reject_request(db, spot_id)
+        return spot_to_dict(return_spot)
     except KeyError as spot_not_found:
         raise HTTPException(status_code=404, detail=str(spot_not_found))
     except ValueError as value_error:
