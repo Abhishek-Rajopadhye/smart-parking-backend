@@ -40,7 +40,7 @@ async def get_profile(user_id: str, token: str = Depends(oauth2_scheme), db: Ses
     try:
         return await get_profile_data(user_id, token, db)
     except KeyError as notfound_error:
-        raise HTTPException(status_code=404, detail=notfound_error)
+        raise HTTPException(status_code=404, detail=str(notfound_error))
     except ValueError as value_error:
         raise HTTPException(
             status_code=500, detail=f"Value error: {str(value_error)}")
