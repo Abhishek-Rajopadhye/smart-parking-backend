@@ -111,9 +111,9 @@ async def add_spot_route(spot_address: str = Form(...),
         image=image,
         verification_status=verification_status
         )
-
+        # print("length of images ", len(spot_data.image))
         response = await add_spot(spot_data, db)
-        print(response)
+        # print(response)
         if "error" in response:
             raise HTTPException(status_code=400, detail=response["detail"])
         return response
