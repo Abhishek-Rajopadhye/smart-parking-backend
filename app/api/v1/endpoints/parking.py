@@ -38,7 +38,6 @@ async def fetch_parking_spot(spot_id: int, db: Session = Depends(get_db)):
             ],
             "status": spot.verification_status
         }
-        print(spot_dict)
         return spot_dict
     except Exception as error:
         raise HTTPException(
@@ -97,9 +96,6 @@ def get_images(spot_id: int, db: Session = Depends(get_db)):
         {"spot_id": spot_id}
     ).fetchone()
 
-    if not row or not row[0]:
-        raise HTTPException(
-            status_code=404, detail="No images found for this spot.")
 
     # row[0] is either bytes (single) or list[bytes]
     blobs = row[0] if isinstance(row[0], (list, tuple)) else [row[0]]

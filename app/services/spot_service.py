@@ -54,10 +54,7 @@ async def add_spot(spot: AddSpot, db: Session):
         add a parking spot for the user
         return the spot details
     """
-    try:
-        #   print(spot)
-        print("Adding spot")
-        
+    try:  
         image_blobs = []
         for image_b64 in (spot.image or []):
             image_data = base64.b64decode(image_b64)
@@ -124,7 +121,6 @@ def get_spot_list_of_owner(user_id: int, db: Session):
         List[dict]: List of spots for the specified user
     """
     try:
-        print("starting to fetch spots")
         spots = db.query(Spot).filter(Spot.owner_id == str(user_id)).all()
         if not spots:
             raise HTTPException(
@@ -132,7 +128,6 @@ def get_spot_list_of_owner(user_id: int, db: Session):
         query = text("select * from spots where owner_id = :user_id")
         result = db.execute(query, {"user_id": str(user_id)}).fetchall()
         spot_list = []
-        print("before adding spots")
 
         for row in result:
             s = ""
