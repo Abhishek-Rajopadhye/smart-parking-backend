@@ -14,7 +14,7 @@ router = APIRouter()
 @router.get("/documents", response_class=JSONResponse)
 async def get_all_documents(db: Session = Depends(get_db)):
     # Join documents with their spot info
-    results = db.query(Spot).all()
+    results = db.query(Spot).filter(Spot.verification_status == 0).all()
 
     response = []
     for spot in results:

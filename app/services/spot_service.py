@@ -1,10 +1,15 @@
+from typing import List
 from app.schemas.spot import AddSpot, EditSpot
 from sqlalchemy.orm import Session
 from app.db.spot_model import Spot, Document
+from app.db.booking_model import Booking
+from app.db.payment_model import Payment
 from app.db.review_model import Review
 from fastapi import HTTPException
-from sqlalchemy.sql import text
+from sqlalchemy import func
 import base64
+
+from app.services.parking_service import get_all_parking_spots
 
 
 async def add_document(spot_id, doc1, doc2, doc3, db: Session):
@@ -54,7 +59,7 @@ async def add_spot(spot: AddSpot, db: Session):
         add a parking spot for the user
         return the spot details
     """
-    try:  
+    try:
         image_blobs = []
         for image_b64 in (spot.image or []):
             image_data = base64.b64decode(image_b64)
@@ -122,33 +127,35 @@ def get_spot_list_of_owner(user_id: int, db: Session):
     """
     try:
         spots = db.query(Spot).filter(Spot.owner_id == str(user_id)).all()
-        if not spots:
-            raise HTTPException(
-                status_code=404, detail="No spots found for this owner.")
-        query = text("select * from spots where owner_id = :user_id")
-        result = db.execute(query, {"user_id": str(user_id)}).fetchall()
-        spot_list = []
+        out: List[dict] = []
 
-        for row in result:
-            s = ""
-            s += ", ".join(str(item) for item in row[12])
-            total_earning = db.execute(
-                text("select SUM(amount) from payments where spot_id = :spot_id"),
-                {"spot_id": row[0]}).fetchone()
-            total_earning = 0 if total_earning[0] == None else total_earning[0]
-            spot_list.append({
-                "id": row[0],
-                "title": row[2],
-                "description": row[11],
-                "totalEarning": total_earning,
-                "address": row[3],
-                "openTime": row[9],
-                "closeTime": row[10],
-                "hourlyRate": row[6],
-                "totalSlots": row[7],
-                "openDays":  s
-            })
-        return spot_list
+        for spot in spots:
+            total_earnings = (
+                db.query(func.coalesce(func.sum(Payment.amount), 0))
+                .join(Booking, Payment.id == Booking.payment_id)
+                .filter(Booking.spot_id == spot.spot_id)
+                .scalar()
+            )
+            spot_dict = {
+                "id":         spot.spot_id,
+                "address":         spot.address,
+                "owner_id":        spot.owner_id,
+                "title":      spot.spot_title,
+                "latitude":        spot.latitude,
+                "longitude":       spot.longitude,
+                "totalEarning": int(total_earnings),
+                "available_slots": spot.available_slots,
+                "total_slots":     spot.no_of_slots,
+                "hourlyRate":     spot.hourly_rate,
+                "openTime":       spot.open_time,
+                "closeTime":      spot.close_time,
+                "description":     spot.description,
+                "openDays":  spot.available_days,
+                "status": spot.verification_status
+            }
+            out.append(spot_dict)
+
+        return out
     except Exception as e:
         print(e)
         raise HTTPException(
@@ -189,11 +196,12 @@ async def update_spot_details(updated_spot: EditSpot, spot_id: int, db: Session)
             "description": updated_spot.spot_description,
             "available_days": updated_spot.available_days,
         })
-        if (updated_spot.image != []):
+        if (updated_spot.image and updated_spot.image != []):
+            image_blobs = [base64.b64decode(img_b64)
+                           for img_b64 in updated_spot.image]
             db.query(Spot).filter(Spot.spot_id == spot_id).update({
-                "image": updated_spot.image == []
+                "image": image_blobs
             })
-
         db.commit()
         return updated_spot
     except Exception as db_error:
