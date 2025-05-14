@@ -107,7 +107,7 @@ async def add_spot_route(spot_address: str = Form(...),
         open_time=open_time,
         close_time=close_time,
         spot_description=spot_description,
-        available_days=available_days,
+        available_days=available_days[0].split(","),
         image=image,
         verification_status=verification_status
         )
