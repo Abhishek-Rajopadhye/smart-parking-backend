@@ -54,7 +54,7 @@ async def add_spot(spot: AddSpot, db: Session):
         add a parking spot for the user
         return the spot details
     """
-    try:  
+    try:
         image_blobs = []
         for image_b64 in (spot.image or []):
             image_data = base64.b64decode(image_b64)
@@ -189,11 +189,11 @@ async def update_spot_details(updated_spot: EditSpot, spot_id: int, db: Session)
             "description": updated_spot.spot_description,
             "available_days": updated_spot.available_days,
         })
-        if (updated_spot.image != []):
+        if(updated_spot.image and updated_spot.image != []):
+            image_blobs = [base64.b64decode(img_b64) for img_b64 in updated_spot.image]
             db.query(Spot).filter(Spot.spot_id == spot_id).update({
-                "image": updated_spot.image == []
+                "image": image_blobs
             })
-
         db.commit()
         return updated_spot
     except Exception as db_error:
