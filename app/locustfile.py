@@ -6,7 +6,6 @@ class BookingUser(HttpUser):
     
     @task
     def book_spot(self):
-        # Define the POST request to your /bookings/book-spot endpoint
         payload = {
             "user_id": "111919577987638512190",
             "spot_id": 2,
